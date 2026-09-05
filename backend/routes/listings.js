@@ -445,4 +445,25 @@ router.patch("/:id", verifyToken, requireRole("farmer", "fpo", "admin"), async (
   }
 });
 
+/**
+ * DELETE /api/listings/:id
+ * Delete listing (Farmer owner or admin only)
+ */
+router.delete("/:id", verifyToken, requireRole("farmer", "fpo", "admin"), async (req, res) => {
+  try {
+    const listing = await Listing.findById(req.params.id);
+    if (!listing) return res.status(404).json({ error: "listing_not_found" });
+
+    if (req.user.role !== "admin" && !listing.farmer.equals(req.user.sub)) {
+      return res.status(403).json({ error: "unauthorized" });
+    }
+
+    await Listing.findByIdAndDelete(req.params.id);
+    return res.json({ ok: true, message: "listing_deleted" });
+  } catch (err) {
+    console.error("Listing delete error:", err);
+    return res.status(500).json({ error: "delete_failed" });
+  }
+});
+
 module.exports = router;

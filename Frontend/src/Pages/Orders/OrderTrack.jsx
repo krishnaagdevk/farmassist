@@ -5,13 +5,9 @@ import {
   CheckCircle2,
   Clock,
   Truck,
-  MapPin,
   Sparkles,
   ChevronLeft,
-  ShieldCheck,
-  TrendingUp,
 } from "lucide-react";
-import "./OrderTrack.css";
 
 export default function OrderTrack() {
   const { id } = useParams();
@@ -43,8 +39,10 @@ export default function OrderTrack() {
 
   if (loading || !order) {
     return (
-      <div className="track-loading">
-        <p>Loading shipment trajectory and transparency ledger...</p>
+      <div className="min-h-[70vh] flex items-center justify-center">
+        <p className="text-slate-500 font-medium text-sm animate-pulse">
+          Loading shipment trajectory and transparency ledger...
+        </p>
       </div>
     );
   }
@@ -60,211 +58,239 @@ export default function OrderTrack() {
   const activeIndex = currentStepIndex >= 0 ? currentStepIndex : 0;
 
   return (
-    <div className="order-track-page">
-      <button className="back-btn" onClick={() => navigate("/orders")}>
-        <ChevronLeft size={18} />
-        <span>Back to Orders</span>
-      </button>
+    <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto space-y-6">
+        <button
+          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 bg-white border border-slate-200 px-3.5 py-2 rounded-xl shadow-sm transition min-h-[44px]"
+          onClick={() => navigate("/orders")}
+        >
+          <ChevronLeft size={18} />
+          <span>Back to Orders</span>
+        </button>
 
-      <div className="track-header-banner">
-        <div>
-          <h1>Tracking Order #{order.orderNo}</h1>
-          <p>
-            Delivery destination: <strong>{order.deliveryAddress?.line1}, {order.deliveryAddress?.city}</strong>
-          </p>
+        {/* Top Header Card */}
+        <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black text-white">
+              Tracking Order #{order.orderNo}
+            </h1>
+            <p className="text-xs sm:text-sm text-emerald-200/90 mt-1">
+              Destination:{" "}
+              <strong>
+                {order.deliveryAddress?.line1}, {order.deliveryAddress?.city}
+              </strong>
+            </p>
+          </div>
+
+          <div className="bg-white/10 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/10 text-right self-start sm:self-auto">
+            <span className="text-xs text-emerald-200 block">Total Paid</span>
+            <strong className="text-2xl font-black text-white">
+              ₹{(order.totalPaise / 100).toFixed(0)}
+            </strong>
+          </div>
         </div>
-        <div className="order-total-badge">
-          <span>Total Paid</span>
-          <strong>₹{(order.totalPaise / 100).toFixed(0)}</strong>
+
+        {/* Progress Status Stepper */}
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
+          <h3 className="text-base font-bold text-slate-900">Live Fulfillment Trajectory</h3>
+
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            {steps.map((step, idx) => {
+              const isCompleted = idx <= activeIndex;
+              const isCurrent = idx === activeIndex;
+
+              return (
+                <div
+                  key={step.key}
+                  className={`p-4 rounded-2xl border transition ${
+                    isCurrent
+                      ? "bg-emerald-50 border-emerald-500 shadow-sm"
+                      : isCompleted
+                      ? "bg-slate-50 border-emerald-200"
+                      : "bg-white border-slate-200 opacity-60"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <div
+                      className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+                        isCompleted
+                          ? "bg-emerald-600 text-white"
+                          : "bg-slate-200 text-slate-600"
+                      }`}
+                    >
+                      {isCompleted ? <CheckCircle2 size={16} /> : idx + 1}
+                    </div>
+                    <h4 className="text-xs font-bold text-slate-900 leading-tight">
+                      {step.label}
+                    </h4>
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-snug">{step.desc}</p>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
 
-      {/* Progress Status Stepper */}
-      <div className="stepper-card">
-        <h3>Live Fulfillment Trajectory</h3>
-        <div className="stepper-timeline">
-          {steps.map((step, idx) => {
-            const isCompleted = idx <= activeIndex;
-            const isCurrent = idx === activeIndex;
-
-            return (
-              <div key={step.key} className={`timeline-step ${isCompleted ? "completed" : ""} ${isCurrent ? "current" : ""}`}>
-                <div className="step-marker">
-                  {isCompleted ? <CheckCircle2 size={18} /> : <span>{idx + 1}</span>}
-                </div>
-                <div className="step-details">
-                  <h4>{step.label}</h4>
-                  <p>{step.desc}</p>
-                </div>
+        {/* Live Logistics Fleet & Dispatch Status Widget */}
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-4">
+          <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
+                <Truck size={22} />
               </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Live Logistics Fleet & Dispatch Status Widget */}
-      <div className="logistics-support-card" style={{ background: "#ffffff", borderRadius: "12px", padding: "1.5rem", marginBottom: "2rem", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", border: "1px solid #e2e8f0" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <Truck size={22} color="#16a34a" />
-            <div>
-              <h3 style={{ margin: 0, fontSize: "1.1rem", color: "#1e293b" }}>Logistics & Transit Coordination</h3>
-              <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>Direct cold-chain & optimized farm-to-door transit</p>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Logistics & Transit Coordination</h3>
+                <p className="text-xs text-slate-500">Direct cold-chain & optimized farm-to-door transit</p>
+              </div>
             </div>
+            <span className="px-3 py-1 bg-emerald-50 text-emerald-800 rounded-full text-xs font-bold">
+              {order.shipment ? `Trip: ${order.shipment.code || "Active"}` : "Logistics: Batch Allocation"}
+            </span>
           </div>
-          <span style={{
-            background: order.shipment ? "#dcfce7" : "#f1f5f9",
-            color: order.shipment ? "#166534" : "#475569",
-            padding: "4px 12px",
-            borderRadius: "999px",
-            fontSize: "0.8rem",
-            fontWeight: "600"
-          }}>
-            {order.shipment ? `Trip: ${order.shipment.code || "Active"}` : "Logistics: Batch Allocation"}
-          </span>
-        </div>
 
-        {order.shipment ? (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginTop: "1rem", background: "#f8fafc", padding: "1rem", borderRadius: "8px" }}>
-            <div>
-              <span style={{ fontSize: "0.75rem", color: "#64748b", textTransform: "uppercase", fontWeight: "600" }}>Driver & Transit</span>
-              <p style={{ margin: "4px 0 0 0", fontWeight: "600", color: "#1e293b" }}>
-                {order.shipment.driver?.name || "Verified Logistics Partner"}
-              </p>
-              <span style={{ fontSize: "0.8rem", color: "#16a34a" }}>
-                📞 {order.shipment.driver?.phone || "+91 98765 43210"}
-              </span>
+          {order.shipment ? (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+              <div className="p-3 bg-slate-50 rounded-xl">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide block">
+                  Driver & Contact
+                </span>
+                <p className="text-xs font-bold text-slate-900 mt-1">
+                  {order.shipment.driver?.name || "Verified Logistics Partner"}
+                </p>
+                <span className="text-xs text-emerald-700 block mt-0.5">
+                  📞 {order.shipment.driver?.phone || "+91 98765 43210"}
+                </span>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-xl">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide block">
+                  Vehicle Assignment
+                </span>
+                <p className="text-xs font-bold text-slate-900 mt-1">
+                  {order.shipment.vehicle?.regNo || "DL-01-AG-4920 (EV Agri-Van)"}
+                </p>
+                <span className="text-xs text-slate-500 block mt-0.5">GPS Telematics Active</span>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-xl">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide block">
+                  Route Optimization
+                </span>
+                <p className="text-xs font-bold text-slate-900 mt-1">
+                  {order.shipment.plannedDistanceKm ? `${order.shipment.plannedDistanceKm} km planned` : "Direct Multistop"}
+                </p>
+                <span className="text-xs text-blue-600 block mt-0.5">OR-Tools CVRP Optimized</span>
+              </div>
             </div>
-            <div>
-              <span style={{ fontSize: "0.75rem", color: "#64748b", textTransform: "uppercase", fontWeight: "600" }}>Vehicle Assignment</span>
-              <p style={{ margin: "4px 0 0 0", fontWeight: "600", color: "#1e293b" }}>
-                {order.shipment.vehicle?.regNo || "DL-01-AG-4920 (EV Agri-Van)"}
-              </p>
-              <span style={{ fontSize: "0.8rem", color: "#64748b" }}>
-                GPS Telematics Active
-              </span>
-            </div>
-            <div>
-              <span style={{ fontSize: "0.75rem", color: "#64748b", textTransform: "uppercase", fontWeight: "600" }}>Route Optimization</span>
-              <p style={{ margin: "4px 0 0 0", fontWeight: "600", color: "#1e293b" }}>
-                {order.shipment.plannedDistanceKm ? `${order.shipment.plannedDistanceKm} km planned` : "Direct Multistop"}
-              </p>
-              <span style={{ fontSize: "0.8rem", color: "#2563eb" }}>
-                OR-Tools CVRP Optimized
-              </span>
-            </div>
-          </div>
-        ) : (
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", background: "#f8fafc", padding: "1rem", borderRadius: "8px" }}>
-            <Clock size={20} color="#64748b" />
-            <div>
-              <p style={{ margin: 0, fontSize: "0.9rem", color: "#334155", fontWeight: "500" }}>
+          ) : (
+            <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl">
+              <Clock size={20} className="text-slate-400 shrink-0" />
+              <p className="text-xs text-slate-600 leading-relaxed">
                 Order is queued in regional hub. The OR-Tools route optimizer will group this with neighboring farm deliveries for minimal transit time and reduced carbon footprint.
               </p>
-              <span style={{ fontSize: "0.8rem", color: "#16a34a", fontWeight: "600" }}>
-                Estimated Delivery Window: Next Day 08:00 - 14:00 IST
-              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Side-by-side Transparency Ledger Panel */}
+        {ledger && (
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+              <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
+                <Sparkles size={22} />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Supply Chain Transparency Breakdown</h3>
+                <p className="text-xs text-slate-500">Comparing Direct Farm Flow vs Traditional 4-Tier Mandi Intermediary Chain</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Direct Model (AgriDirect) */}
+              <div className="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-emerald-900 uppercase tracking-wide">
+                    AgriDirect (This Order)
+                  </span>
+                  <span className="px-2.5 py-0.5 bg-emerald-600 text-white rounded-full text-xs font-bold">
+                    {ledger.direct?.farmerSharePct}% to Farmer
+                  </span>
+                </div>
+
+                <div className="space-y-2 text-xs pt-2">
+                  <div className="flex justify-between text-slate-700">
+                    <span>Farmer Receives (100% Produce)</span>
+                    <strong className="text-emerald-800">₹{(ledger.direct?.farmerReceivesPaise / 100).toFixed(0)}</strong>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>Optimized Logistics Fee</span>
+                    <span>₹{(ledger.direct?.logisticsFeePaise / 100).toFixed(0)}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>Platform Fee (2%)</span>
+                    <span>₹{(ledger.direct?.platformFeePaise / 100).toFixed(0)}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-900 font-bold pt-2 border-t border-emerald-200">
+                    <span>Consumer Paid</span>
+                    <span>₹{(ledger.direct?.consumerPaysPaise / 100).toFixed(0)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Traditional Mandi Model */}
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                    Traditional APMC Mandi Chain
+                  </span>
+                  <span className="px-2.5 py-0.5 bg-amber-100 text-amber-900 rounded-full text-xs font-bold">
+                    {ledger.traditional?.farmerSharePct}% to Farmer
+                  </span>
+                </div>
+
+                <div className="space-y-2 text-xs pt-2">
+                  <div className="flex justify-between text-slate-600">
+                    <span>Farmer Received</span>
+                    <span>₹{(ledger.traditional?.farmerReceivesPaise / 100).toFixed(0)}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>Commission Agent (Arhtiya)</span>
+                    <span>₹{(ledger.traditional?.commissionAgentPaise / 100).toFixed(0)}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>Wholesaler Margin</span>
+                    <span>₹{(ledger.traditional?.wholesalerPaise / 100).toFixed(0)}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>City Retailer Margin</span>
+                    <span>₹{(ledger.traditional?.retailerPaise / 100).toFixed(0)}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-900 font-bold pt-2 border-t border-slate-200">
+                    <span>Est. Retailer Consumer Price</span>
+                    <span className="line-through text-slate-500">
+                      ₹{(ledger.traditional?.consumerPaysPaise / 100).toFixed(0)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Savings Ribbon */}
+            <div className="grid grid-cols-2 gap-4 p-4 bg-slate-900 text-white rounded-2xl">
+              <div>
+                <span className="text-[11px] text-emerald-300 block uppercase font-semibold">Farmer Net Gain</span>
+                <strong className="text-base sm:text-lg font-bold text-emerald-400">
+                  +₹{(ledger.savings?.farmerGainsPaise / 100).toFixed(0)} (+{ledger.savings?.farmerGainsPct}%)
+                </strong>
+              </div>
+              <div>
+                <span className="text-[11px] text-blue-300 block uppercase font-semibold">Consumer Saved</span>
+                <strong className="text-base sm:text-lg font-bold text-blue-400">
+                  ₹{(ledger.savings?.consumerSavesPaise / 100).toFixed(0)} ({ledger.savings?.consumerSavesPct}% cheaper)
+                </strong>
+              </div>
             </div>
           </div>
         )}
       </div>
-
-      {/* Side-by-side Transparency Ledger Panel */}
-      {ledger && (
-        <div className="economic-ledger-card">
-          <div className="ledger-card-header">
-            <Sparkles size={20} className="sparkle" />
-            <div>
-              <h3>Supply Chain Transparency Breakdown</h3>
-              <p>Comparing Direct Farm Flow vs Traditional 4-Tier Mandi Intermediary Chain</p>
-            </div>
-          </div>
-
-          <div className="chains-comparison-grid">
-            {/* Direct Model (AgriDirect) */}
-            <div className="chain-box direct-box">
-              <div className="chain-title">
-                <span>AgriDirect (This Order)</span>
-                <span className="share-pill green">{ledger.direct?.farmerSharePct}% to Farmer</span>
-              </div>
-
-              <div className="chain-lines">
-                <div className="chain-line">
-                  <span>Farmer Receives (100% Produce)</span>
-                  <strong>₹{(ledger.direct?.farmerReceivesPaise / 100).toFixed(0)}</strong>
-                </div>
-                <div className="chain-line">
-                  <span>Optimized Logistics Fee</span>
-                  <span>₹{(ledger.direct?.logisticsFeePaise / 100).toFixed(0)}</span>
-                </div>
-                <div className="chain-line">
-                  <span>Platform Fee (2%)</span>
-                  <span>₹{(ledger.direct?.platformFeePaise / 100).toFixed(0)}</span>
-                </div>
-                <div className="chain-line total-line">
-                  <span>Consumer Paid</span>
-                  <strong>₹{(ledger.direct?.consumerPaysPaise / 100).toFixed(0)}</strong>
-                </div>
-              </div>
-            </div>
-
-            {/* Traditional Mandi Model */}
-            <div className="chain-box traditional-box">
-              <div className="chain-title">
-                <span>Traditional APMC Mandi Chain</span>
-                <span className="share-pill orange">{ledger.traditional?.farmerSharePct}% to Farmer</span>
-              </div>
-
-              <div className="chain-lines">
-                <div className="chain-line">
-                  <span>Farmer Received</span>
-                  <span>₹{(ledger.traditional?.farmerReceivesPaise / 100).toFixed(0)}</span>
-                </div>
-                <div className="chain-line">
-                  <span>Commission Agent (Kachha Arhtiya)</span>
-                  <span>₹{(ledger.traditional?.commissionAgentPaise / 100).toFixed(0)}</span>
-                </div>
-                <div className="chain-line">
-                  <span>Wholesaler Margin</span>
-                  <span>₹{(ledger.traditional?.wholesalerPaise / 100).toFixed(0)}</span>
-                </div>
-                <div className="chain-line">
-                  <span>City Retailer Margin</span>
-                  <span>₹{(ledger.traditional?.retailerPaise / 100).toFixed(0)}</span>
-                </div>
-                <div className="chain-line total-line">
-                  <span>Est. Retailer Consumer Price</span>
-                  <strong className="strikethrough">
-                    ₹{(ledger.traditional?.consumerPaysPaise / 100).toFixed(0)}
-                  </strong>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Savings Highlight Ribbon */}
-          <div className="savings-ribbon">
-            <div className="savings-stat">
-              <span className="stat-label">Farmer Net Gain</span>
-              <span className="stat-val green">
-                +₹{(ledger.savings?.farmerGainsPaise / 100).toFixed(0)} (+{ledger.savings?.farmerGainsPct}%)
-              </span>
-            </div>
-            <div className="savings-stat">
-              <span className="stat-label">Consumer Saved</span>
-              <span className="stat-val blue">
-                ₹{(ledger.savings?.consumerSavesPaise / 100).toFixed(0)} ({ledger.savings?.consumerSavesPct}% cheaper)
-              </span>
-            </div>
-          </div>
-
-          <div className="assumptions-footer">
-            <p>
-              * Source: {ledger.assumptions?.source || "APMC mandi modal price benchmarks; margin studies"}
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

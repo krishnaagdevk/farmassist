@@ -10,10 +10,8 @@ import {
   Layers,
   ArrowRight,
 } from "lucide-react";
-import "./DriverRun.css";
 
 export default function DriverRun() {
-  const [shipments, setShipments] = useState([]);
   const [activeShipment, setActiveShipment] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -26,7 +24,6 @@ export default function DriverRun() {
     try {
       const res = await api.get("/api/logistics/shipments");
       const list = res.data.shipments || [];
-      setShipments(list);
       if (list.length > 0) {
         setActiveShipment(list[0]);
       }
@@ -60,75 +57,111 @@ export default function DriverRun() {
   };
 
   if (loading) {
-    return <div className="driver-loading">Loading assigned transit run...</div>;
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center">
+        <p className="text-slate-500 font-medium text-sm animate-pulse">Loading assigned transit run...</p>
+      </div>
+    );
   }
 
   if (!activeShipment) {
     return (
-      <div className="no-driver-runs">
-        <Truck size={48} className="icon-truck" />
-        <h2>No Active Trips Assigned</h2>
-        <p>Your vehicle is currently idle. Route plans will appear here once optimized by dispatch.</p>
+      <div className="min-h-[75vh] flex items-center justify-center px-4 py-12">
+        <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-slate-200 shadow-sm text-center">
+          <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Truck size={32} />
+          </div>
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900">No Active Trips Assigned</h2>
+          <p className="mt-2 text-xs sm:text-sm text-slate-500">
+            Your vehicle is currently idle. Route plans will appear here once optimized by dispatch.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="driver-run-page">
+    <div className="min-h-screen bg-slate-50 pb-16">
       {/* Top Mobile Driver Header */}
-      <div className="driver-run-header">
-        <div>
-          <span className="trip-badge">Trip #{activeShipment.code}</span>
-          <h1>Driver Transit Manifest</h1>
-          <p>
-            {activeShipment.stops?.length || 0} Total Sequence Stops · {activeShipment.plannedDistanceKm} km Total
-          </p>
-        </div>
+      <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white pt-8 pb-10 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
+        <div className="max-w-3xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-300 border border-blue-400/30 mb-2">
+              Trip #{activeShipment.code}
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-black text-white">Driver Manifest</h1>
+            <p className="text-xs sm:text-sm text-slate-300 mt-1">
+              {activeShipment.stops?.length || 0} Total Sequence Stops · {activeShipment.plannedDistanceKm} km Total
+            </p>
+          </div>
 
-        {activeShipment.status === "planned" && (
-          <button className="start-trip-btn" onClick={handleStartTrip}>
-            Start Delivery Run
-          </button>
-        )}
+          {activeShipment.status === "planned" && (
+            <button
+              className="w-full sm:w-auto px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-bold text-sm rounded-xl shadow-md transition min-h-[50px] flex items-center justify-center gap-2"
+              onClick={handleStartTrip}
+            >
+              <Truck size={18} />
+              <span>Start Delivery Run</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Ordered Stop-by-Stop Run Sheet */}
-      <div className="stops-timeline-list">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 -mt-4 space-y-4">
         {activeShipment.stops?.map((stop) => {
           const isDone = stop.status === "done";
           const coords = stop.point?.coordinates || [77.4538, 28.6692];
           const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${coords[1]},${coords[0]}`;
 
           return (
-            <div key={stop._id} className={`driver-stop-card ${isDone ? "done" : ""}`}>
-              <div className="stop-badge-row">
-                <span className={`stop-seq-badge ${stop.kind}`}>
+            <div
+              key={stop._id}
+              className={`bg-white rounded-2xl p-5 border transition shadow-sm ${
+                isDone
+                  ? "border-emerald-200 bg-emerald-50/20 opacity-75"
+                  : "border-slate-200 hover:border-blue-400"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-bold ${
+                    stop.kind === "pickup"
+                      ? "bg-emerald-100 text-emerald-800"
+                      : "bg-blue-100 text-blue-800"
+                  }`}
+                >
                   Stop #{stop.seq} · {stop.kind === "pickup" ? "🌾 Farm Pickup" : "📦 Buyer Drop"}
                 </span>
-                <span className="stop-eta">ETA: +{stop.etaMinutes} min</span>
+                <span className="text-xs font-semibold text-slate-500">ETA: +{stop.etaMinutes} min</span>
               </div>
 
-              <h3 className="stop-label">{stop.label}</h3>
-              <p className="stop-load-info">
-                Load: <strong>{Math.abs(stop.loadGrams / 1000)} kg</strong>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 mt-2">{stop.label}</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Load Payload: <strong className="text-slate-800">{Math.abs(stop.loadGrams / 1000)} kg</strong>
               </p>
 
-              <div className="stop-actions-row">
-                <a href={mapsUrl} target="_blank" rel="noreferrer" className="nav-maps-btn">
-                  <Navigation size={16} />
-                  <span>Navigate</span>
+              <div className="flex items-center gap-3 mt-4 pt-3 border-t border-slate-100">
+                <a
+                  href={mapsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs sm:text-sm rounded-xl transition flex items-center justify-center gap-2 min-h-[48px]"
+                >
+                  <Navigation size={16} className="text-blue-600" />
+                  <span>Google Maps</span>
                 </a>
 
                 {!isDone ? (
                   <button
-                    className="complete-stop-btn"
+                    className="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm rounded-xl shadow-sm transition flex items-center justify-center gap-2 min-h-[48px]"
                     onClick={() => handleCompleteStop(stop._id)}
                   >
                     <CheckCircle2 size={16} />
                     <span>Mark Done</span>
                   </button>
                 ) : (
-                  <span className="done-confirmed-badge">
+                  <span className="flex-1 py-3 px-4 bg-emerald-100 text-emerald-800 font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-1.5 min-h-[48px]">
                     <CheckCircle2 size={16} />
                     <span>Completed</span>
                   </span>
