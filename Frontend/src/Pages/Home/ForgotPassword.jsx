@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { sendOtp } from "../../api/auth";
+import api from "../../lib/api";
 
 export default function ForgotPasswordModal({ onClose, setModal }) {
   const [email, setEmail] = useState("");
@@ -7,10 +7,10 @@ export default function ForgotPasswordModal({ onClose, setModal }) {
 
   const handleSendOtp = async () => {
     try {
-      const res = await sendOtp({ email });
+      const res = await api.post("/api/auth/send-otp", { email, mode: "forgot" });
       localStorage.setItem("resetEmail", email);
       setMessage(res.data.message || "OTP sent to your email!");
-      setModal("resetOtp"); // go to OTP modal
+      setModal("resetOtp");
     } catch (err) {
       setMessage(err.response?.data?.error || "Failed to send OTP");
     }

@@ -1,16 +1,8 @@
-import axios from "axios";
+import api from "../lib/api";
 
-const API = axios.create({
-  baseURL: "http://localhost:5000/api/auth", // your backend base
-  withCredentials: true, // so cookies/sessions work
-});
-
-// ================= Farmer =================
-export const sendOtp = (data) => API.post("/send-otp", data); 
-export const farmerSignup = (data) => API.post("/farmer/signup", data);
-export const farmerLogin = (data) => API.post("/farmer/login", data);
-export const farmerForgotPassword = (data) => API.post("/farmer/forgot-password", data);
-
-// ================= Admin =================
-export const adminSignup = (data) => API.post("/admin/signup", data);
-export const adminLogin = (data) => API.post("/admin/login", data);
+export const sendOtp = (data) => api.post("/api/auth/send-otp", data);
+export const farmerSignup = (data) => api.post("/api/auth/signup", data);
+export const farmerLogin = (data) => api.post("/api/auth/login", data);
+export const farmerForgotPassword = (data) => api.post("/api/auth/forgot-password", data);
+export const adminSignup = (data) => api.post("/api/auth/admin/signup", data);
+export const adminLogin = (data) => api.post("/api/auth/admin/login", data);

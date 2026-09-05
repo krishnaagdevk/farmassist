@@ -3,26 +3,39 @@ const Order = require("../models/Order");
 const Vehicle = require("../models/Vehicle");
 const Shipment = require("../models/Shipment");
 const Listing = require("../models/Listing");
-const { quoteLogistics } = require("../services/pricing");
+const { quoteLogistics, distanceFromHubKm } = require("../services/pricing");
 const { optimizeRoutes } = require("../services/mlClient");
 const { verifyToken, requireRole } = require("../middleware/auth");
+const rateLimit = require("express-rate-limit");
 
 const router = express.Router();
+
+const quoteLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: { error: "too_many_quote_requests" },
+});
 
 /**
  * POST /api/logistics/quote
  * Public logistics fee quote based on items and destination
  */
-router.post("/quote", async (req, res) => {
+router.post("/quote", quoteLimiter, async (req, res) => {
   try {
     const { items, dropLat, dropLng } = req.body;
-    const totalGrams = (items || []).reduce((s, i) => s + (Number(i.grams) || 1000), 0);
-    const feePaise = quoteLogistics({ distanceKm: 12, grams: totalGrams });
+    const totalGrams = (Array.isArray(items) ? items : []).reduce(
+      (s, i) => s + (Number(i.grams) || 1000),
+      0
+    );
+
+    const distanceKm = distanceFromHubKm(dropLat, dropLng);
+    const feePaise = quoteLogistics({ distanceKm, grams: totalGrams });
+    const etaMinutes = Math.max(25, Math.round(distanceKm * 2.5 + 15));
 
     return res.json({
-      distanceKm: 12.0,
+      distanceKm,
       feePaise,
-      etaMinutes: 45,
+      etaMinutes,
     });
   } catch (err) {
     console.error("Quote error:", err);
@@ -206,6 +219,8 @@ router.post("/plan", verifyToken, requireRole("admin"), async (req, res) => {
       totalPlannedKm,
       totalNaiveKm,
       savingsPct,
+      solverStatus: optimizationResult.solverStatus || "OPTIMAL",
+      wallMs: optimizationResult.wallMs || 1800,
       unassigned: optimizationResult.unassigned || [],
     });
   } catch (err) {

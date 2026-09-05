@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Store, LayoutDashboard, Sparkles, X } from "lucide-react";
+import { Store, LayoutDashboard, Sparkles, X, Building2, TrendingUp, Users, Truck } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 import "./FloatingNav.css";
 
 export default function FloatingNav() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const navRef = useRef(null);
+  const { user } = useAuth();
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -38,7 +40,21 @@ export default function FloatingNav() {
           </div>
           <div className="floating-item-text">
             <span className="floating-item-title">Market</span>
-            <span className="floating-item-sub">Produce & Store</span>
+            <span className="floating-item-sub">Retail Produce</span>
+          </div>
+        </Link>
+
+        <Link
+          to="/bulk"
+          className={`floating-menu-item bulk-item ${location.pathname.startsWith("/bulk") ? "active" : ""}`}
+          onClick={() => setIsOpen(false)}
+        >
+          <div className="floating-item-icon" style={{ background: "#eff6ff", color: "#2563eb" }}>
+            <Building2 size={20} />
+          </div>
+          <div className="floating-item-text">
+            <span className="floating-item-title">Bulk RFQ</span>
+            <span className="floating-item-sub">B2B & FPO Pools</span>
           </div>
         </Link>
 
@@ -52,9 +68,51 @@ export default function FloatingNav() {
           </div>
           <div className="floating-item-text">
             <span className="floating-item-title">AI Advisory</span>
-            <span className="floating-item-sub">Weather & Guidance</span>
+            <span className="floating-item-sub">Weather & Insights</span>
           </div>
         </Link>
+
+        {user && (
+          <Link
+            to={
+              user.role === "farmer"
+                ? "/farmer"
+                : user.role === "fpo"
+                ? "/fpo"
+                : user.role === "driver"
+                ? "/driver"
+                : user.role === "admin"
+                ? "/dispatch"
+                : "/market"
+            }
+            className={`floating-menu-item dashboard-item ${
+              ["/farmer", "/fpo", "/driver", "/dispatch"].includes(location.pathname) ? "active" : ""
+            }`}
+            onClick={() => setIsOpen(false)}
+          >
+            <div
+              className="floating-item-icon"
+              style={{
+                background: user.role === "fpo" ? "#faf5ff" : user.role === "farmer" ? "#fff7ed" : "#f0fdf4",
+                color: user.role === "fpo" ? "#7e22ce" : user.role === "farmer" ? "#c2410c" : "#15803d",
+              }}
+            >
+              {user.role === "farmer" ? (
+                <TrendingUp size={20} />
+              ) : user.role === "fpo" ? (
+                <Users size={20} />
+              ) : user.role === "driver" ? (
+                <Truck size={20} />
+              ) : (
+                <LayoutDashboard size={20} />
+              )}
+            </div>
+            <div className="floating-item-text">
+              <span className="floating-item-title">My Console</span>
+              <span className="floating-item-sub">{user.role?.toUpperCase()} Portal</span>
+            </div>
+          </Link>
+        )}
       </div>
 
       {/* Floating Action Ball / Orb */}

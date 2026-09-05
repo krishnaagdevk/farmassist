@@ -1,5 +1,6 @@
 const express = require("express");
 const crypto = require("crypto");
+const mongoose = require("mongoose");
 const Razorpay = require("razorpay");
 const Order = require("../models/Order");
 const { verifyToken } = require("../middleware/auth");
@@ -21,11 +22,23 @@ if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
 router.post("/intent", verifyToken, async (req, res) => {
   try {
     const { orderId } = req.body;
+    if (!orderId || !mongoose.isValidObjectId(orderId)) {
+      return res.status(400).json({ error: "invalid_order_id" });
+    }
+
     const order = await Order.findById(orderId);
     if (!order) return res.status(404).json({ error: "order_not_found" });
 
-    // In mock mode or when keys aren't set
-    if (process.env.MOCK_PAYMENTS === "true" || !razorpay) {
+    // Ownership: buyer or admin
+    if (order.buyer.toString() !== req.user.sub && req.user.role !== "admin") {
+      return res.status(403).json({ error: "forbidden" });
+    }
+
+    // Mock payment mode
+    if (process.env.MOCK_PAYMENTS === "true") {
+      if (process.env.NODE_ENV === "production") {
+        return res.status(500).json({ error: "mock_payments_forbidden_in_production" });
+      }
       return res.json({
         mock: true,
         orderId: order._id,
@@ -33,6 +46,10 @@ router.post("/intent", verifyToken, async (req, res) => {
         currency: "INR",
         keyId: "mock_key",
       });
+    }
+
+    if (!razorpay) {
+      return res.status(503).json({ error: "payment_provider_not_configured" });
     }
 
     const options = {
@@ -60,7 +77,7 @@ router.post("/intent", verifyToken, async (req, res) => {
 
 /**
  * POST /api/payments/verify
- * Server-side HMAC-SHA256 verification
+ * Server-side HMAC-SHA256 verification with strict ownership and idempotency
  */
 router.post("/verify", verifyToken, async (req, res) => {
   try {
@@ -71,10 +88,29 @@ router.post("/verify", verifyToken, async (req, res) => {
       razorpay_signature,
     } = req.body;
 
+    if (!orderId || !mongoose.isValidObjectId(orderId)) {
+      return res.status(400).json({ error: "invalid_order_id" });
+    }
+
     const order = await Order.findById(orderId);
     if (!order) return res.status(404).json({ error: "order_not_found" });
 
-    if (process.env.MOCK_PAYMENTS === "true" || !razorpay) {
+    // Ownership: buyer who placed it, or an admin
+    if (order.buyer.toString() !== req.user.sub && req.user.role !== "admin") {
+      return res.status(403).json({ error: "forbidden" });
+    }
+
+    // Idempotency: never re-pay an already paid order
+    if (order.status === "paid") {
+      return res.json({ ok: true, status: "paid" });
+    }
+
+    // Mock payment branch
+    if (process.env.MOCK_PAYMENTS === "true") {
+      if (process.env.NODE_ENV === "production") {
+        return res.status(500).json({ error: "mock_payments_forbidden_in_production" });
+      }
+
       order.status = "paid";
       order.payment = {
         provider: "mock",
@@ -91,14 +127,21 @@ router.post("/verify", verifyToken, async (req, res) => {
       return res.json({ ok: true, status: "paid" });
     }
 
+    if (!razorpay || !process.env.RAZORPAY_KEY_SECRET) {
+      return res.status(503).json({ error: "payment_provider_not_configured" });
+    }
+
     // Cryptographic signature check
-    const body = razorpay_order_id + "|" + razorpay_payment_id;
-    const expectedSignature = crypto
+    const expected = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-      .update(body.toString())
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest("hex");
 
-    if (expectedSignature !== razorpay_signature) {
+    if (
+      !razorpay_signature ||
+      Buffer.byteLength(expected) !== Buffer.byteLength(String(razorpay_signature)) ||
+      !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(String(razorpay_signature)))
+    ) {
       return res.status(400).json({ error: "invalid_payment_signature" });
     }
 
@@ -113,10 +156,10 @@ router.post("/verify", verifyToken, async (req, res) => {
     order.statusLog.push({
       status: "paid",
       by: req.user.sub,
-      note: "Payment verified via Razorpay",
+      note: "Payment verified successfully via Razorpay",
     });
-    await order.save();
 
+    await order.save();
     return res.json({ ok: true, status: "paid" });
   } catch (err) {
     console.error("Payment verify error:", err);

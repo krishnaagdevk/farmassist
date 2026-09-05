@@ -1,4 +1,5 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const Crop = require("../models/Crop");
 const PriceBenchmark = require("../models/PriceBenchmark");
 const { getDemandForecast } = require("../services/mlClient");
@@ -12,11 +13,14 @@ router.get("/demand", async (req, res) => {
   try {
     const { crop = "tomato", district = "Ghaziabad", horizon = 14 } = req.query;
 
+    const cropSlug = typeof crop === "string" ? crop.trim().toLowerCase() : "tomato";
+    const districtName = typeof district === "string" ? district.trim() : "Ghaziabad";
+
     const forecast = await getDemandForecast({
-      crop,
-      region: district,
+      crop: cropSlug,
+      region: districtName,
       horizonDays: parseInt(horizon) || 14,
-      history: [], // Seeded orders history or synthetic structured series
+      history: [],
     });
 
     return res.json({ forecast });
@@ -28,18 +32,21 @@ router.get("/demand", async (req, res) => {
 
 /**
  * GET /api/insights/suggest-price
- * Recommended price band with today's mandi and retail benchmarks
+ * Recommended price band with today's mandi and retail benchmarks (accepts crop slug or cropId)
  */
 router.get("/suggest-price", async (req, res) => {
   try {
-    const { cropId, grade = "A", district = "Ghaziabad" } = req.query;
+    const { cropId, crop, grade = "A", district = "Ghaziabad" } = req.query;
 
     let cropDoc = null;
-    if (cropId) {
+    if (cropId && mongoose.isValidObjectId(cropId)) {
       cropDoc = await Crop.findById(cropId);
+    } else if (crop && typeof crop === "string") {
+      cropDoc = await Crop.findOne({ slug: crop.toLowerCase().trim() });
     }
+
     if (!cropDoc) {
-      cropDoc = await Crop.findOne({ slug: "tomato" });
+      cropDoc = (await Crop.findOne({ slug: "tomato" })) || (await Crop.findOne());
     }
 
     const benchmark = await PriceBenchmark.findOne({
@@ -60,6 +67,7 @@ router.get("/suggest-price", async (req, res) => {
 
     return res.json({
       crop: cropDoc?.name,
+      cropSlug: cropDoc?.slug,
       suggestedPaisePerKg,
       bandLoPaise,
       bandHiPaise,

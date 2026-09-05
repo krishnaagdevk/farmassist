@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { farmerSignup } from "../../api/auth";
+import api from "../../lib/api";
 import { useNavigate } from "react-router-dom";
 import "./Otp.css";
 
@@ -8,7 +8,7 @@ export default function OtpVerify() {
   const [message, setMessage] = useState("");
   const navigate = useNavigate();
 
-  const userData = JSON.parse(localStorage.getItem("pendingUser"));
+  const userData = JSON.parse(localStorage.getItem("pendingUser") || "{}");
 
   const handleChange = (e, index) => {
     const val = e.target.value.replace(/[^0-9]/g, "");
@@ -19,9 +19,15 @@ export default function OtpVerify() {
 
   const handleVerify = async () => {
     try {
-      const res = await farmerSignup({ email: userData.email, otp: otp.join(""), });
+      const res = await api.post("/api/auth/signup", {
+        email: userData.email,
+        otp: otp.join(""),
+      });
       localStorage.removeItem("pendingUser");
       localStorage.setItem("token", res.data.token);
+      if (res.data.user) {
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+      }
       setMessage("Signup successful!");
       navigate("/dashboard");
     } catch (err) {
@@ -47,7 +53,9 @@ export default function OtpVerify() {
               />
             ))}
           </div>
-          <button className="verify-btn" onClick={handleVerify}>Verify OTP</button>
+          <button className="verify-btn" onClick={handleVerify}>
+            Verify OTP
+          </button>
           <p style={{ color: "red" }}>{message}</p>
         </div>
       </div>

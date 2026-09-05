@@ -14,6 +14,8 @@ import {
   MapPin,
   Sparkles,
   LayoutDashboard,
+  Building2,
+  Users,
 } from "lucide-react";
 import "./Navbar.css";
 
@@ -58,6 +60,11 @@ export default function Navbar() {
             <span>Market</span>
           </Link>
 
+          <Link to="/bulk" className="nav-link">
+            <Building2 size={18} />
+            <span>Bulk RFQ</span>
+          </Link>
+
           <Link to="/dashboard" className="nav-link">
             <LayoutDashboard size={18} />
             <span>AI Advisory</span>
@@ -67,6 +74,13 @@ export default function Navbar() {
             <Link to="/farmer" className="nav-link">
               <TrendingUp size={18} />
               <span>Farmer Hub</span>
+            </Link>
+          )}
+
+          {user && ["fpo", "farmer", "admin"].includes(user.role) && (
+            <Link to="/fpo" className="nav-link">
+              <Users size={18} />
+              <span>FPO Hub</span>
             </Link>
           )}
 
@@ -93,80 +107,141 @@ export default function Navbar() {
           </Link>
 
           {user ? (
-            <div className="user-profile-menu">
-              <Link to="/orders" className="user-btn">
-                <User size={18} />
-                <span className="user-name">{user.name?.split(" ")[0]}</span>
-              </Link>
-              <button onClick={handleLogout} className="logout-btn" title="Sign Out">
-                <LogOut size={18} />
+            <div className="user-dropdown">
+              <button
+                className="user-profile-btn"
+                title={`${user.name || "User"} (${user.role})`}
+                onClick={() => navigate("/orders")}
+              >
+                <div className="user-avatar">
+                  {user.name ? user.name.charAt(0).toUpperCase() : "U"}
+                </div>
+                <span className="user-name-text">
+                  {user.name?.split(" ")[0]}
+                </span>
+              </button>
+
+              <button
+                className="logout-btn"
+                onClick={handleLogout}
+                title="Sign Out"
+              >
+                <LogOut size={16} />
               </button>
             </div>
           ) : (
-            <Link to="/login" className="login-btn">
+            <Link to="/login" className="login-nav-btn">
               Sign In
             </Link>
           )}
 
+          {/* Hamburger Menu Toggle (Mobile) */}
           <button
-            className="mobile-menu-toggle"
+            className="mobile-menu-btn"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle Navigation Menu"
+            aria-label="Toggle navigation menu"
           >
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Drawer Navigation */}
+      {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
         <div className="mobile-drawer">
           {user && (
-            <div className="mobile-user-greeting">
-              <User size={16} />
-              <span>Hello, <strong>{user.name?.split(" ")[0]}</strong></span>
-              <span className="mobile-location-pill">
-                <MapPin size={12} /> {locationLabel}
+            <div className="mobile-user-card">
+              <strong>{user.name}</strong>
+              <span className="role-tag">
+                {user.role ? user.role.toUpperCase() : "BUYER"}
               </span>
             </div>
           )}
 
-          <Link to="/market" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>
+          <Link
+            to="/market"
+            className="mobile-nav-link"
+            onClick={() => setMobileMenuOpen(false)}
+          >
             <Store size={20} />
             <span>Produce Storefront</span>
           </Link>
 
-          <Link to="/dashboard" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>
+          <Link
+            to="/bulk"
+            className="mobile-nav-link"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <Building2 size={20} />
+            <span>B2B Bulk RFQ</span>
+          </Link>
+
+          <Link
+            to="/dashboard"
+            className="mobile-nav-link"
+            onClick={() => setMobileMenuOpen(false)}
+          >
             <LayoutDashboard size={20} />
             <span>AI Advisory & Weather</span>
           </Link>
 
-          <Link to="/cart" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>
+          <Link
+            to="/cart"
+            className="mobile-nav-link"
+            onClick={() => setMobileMenuOpen(false)}
+          >
             <ShoppingBag size={20} />
             <span>My Cart ({itemCount})</span>
           </Link>
 
-          <Link to="/orders" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>
+          <Link
+            to="/orders"
+            className="mobile-nav-link"
+            onClick={() => setMobileMenuOpen(false)}
+          >
             <User size={20} />
             <span>My Orders & Tracking</span>
           </Link>
 
           {user && ["farmer", "fpo", "admin"].includes(user.role) && (
-            <Link to="/farmer" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>
+            <Link
+              to="/farmer"
+              className="mobile-nav-link"
+              onClick={() => setMobileMenuOpen(false)}
+            >
               <TrendingUp size={20} />
               <span>Farmer Portal & Insights</span>
             </Link>
           )}
 
+          {user && ["fpo", "farmer", "admin"].includes(user.role) && (
+            <Link
+              to="/fpo"
+              className="mobile-nav-link"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Users size={20} />
+              <span>FPO Federation Hub</span>
+            </Link>
+          )}
+
           {user && ["driver", "admin"].includes(user.role) && (
-            <Link to="/driver" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>
+            <Link
+              to="/driver"
+              className="mobile-nav-link"
+              onClick={() => setMobileMenuOpen(false)}
+            >
               <Truck size={20} />
               <span>Driver Run Sheet</span>
             </Link>
           )}
 
           {user && user.role === "admin" && (
-            <Link to="/dispatch" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>
+            <Link
+              to="/dispatch"
+              className="mobile-nav-link"
+              onClick={() => setMobileMenuOpen(false)}
+            >
               <Sparkles size={20} />
               <span>AI Route Optimization Board</span>
             </Link>
@@ -178,7 +253,11 @@ export default function Navbar() {
               <span>Sign Out ({user.email})</span>
             </button>
           ) : (
-            <Link to="/login" className="mobile-login-btn" onClick={() => setMobileMenuOpen(false)}>
+            <Link
+              to="/login"
+              className="mobile-login-btn"
+              onClick={() => setMobileMenuOpen(false)}
+            >
               Sign In / Register
             </Link>
           )}

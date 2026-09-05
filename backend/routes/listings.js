@@ -61,8 +61,9 @@ router.get("/", async (req, res) => {
     }
 
     // 2. Crop filter by slug if provided
-    if (crop) {
-      const cropDoc = await Crop.findOne({ slug: crop.toLowerCase() }).lean();
+    const cropSlug = typeof crop === "string" ? crop.trim() : "";
+    if (cropSlug) {
+      const cropDoc = await Crop.findOne({ slug: cropSlug.toLowerCase() }).lean();
       if (cropDoc) {
         pipeline.push({ $match: { crop: cropDoc._id } });
       }
@@ -70,12 +71,20 @@ router.get("/", async (req, res) => {
 
     // 3. Other filters
     const additionalMatch = {};
-    if (grade) additionalMatch.grade = grade;
-    if (organic === "true") additionalMatch.organic = true;
-    if (minGrams) additionalMatch.availableGrams = { $gte: parseInt(minGrams) };
-    if (maxPricePaisePerKg) {
-      additionalMatch.pricePaisePerKg = { $lte: parseInt(maxPricePaisePerKg) };
+    const gradeStr = typeof grade === "string" ? grade.trim() : "";
+    if (gradeStr && ["A", "B", "C"].includes(gradeStr)) {
+      additionalMatch.grade = gradeStr;
     }
+    if (organic === "true" || organic === true) additionalMatch.organic = true;
+
+    const minG = parseInt(minGrams);
+    if (Number.isFinite(minG) && minG > 0) additionalMatch.availableGrams = { $gte: minG };
+
+    const maxP = parseInt(maxPricePaisePerKg);
+    if (Number.isFinite(maxP) && maxP > 0) {
+      additionalMatch.pricePaisePerKg = { $lte: maxP };
+    }
+
     if (Object.keys(additionalMatch).length > 0) {
       pipeline.push({ $match: additionalMatch });
     }

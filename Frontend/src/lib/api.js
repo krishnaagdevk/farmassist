@@ -1,6 +1,13 @@
 import axios from "axios";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
+const API_BASE =
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_API_BASE ||
+  (import.meta.env.DEV ? "http://localhost:5000" : "");
+
+if (!API_BASE && !import.meta.env.DEV) {
+  console.error("VITE_API_URL is missing in production build environment configuration.");
+}
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -26,11 +33,10 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && !error.config.url.includes("/auth/login")) {
+    if (error.response?.status === 401 && !error.config?.url?.includes("/auth/login")) {
       console.warn("Session expired or unauthorized. Clearing stored token.");
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      // Optional: redirect to login if not already there
     }
     return Promise.reject(error);
   }

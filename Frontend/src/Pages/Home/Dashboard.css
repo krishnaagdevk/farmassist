@@ -2645,6 +2645,7 @@ body::before {
   text-transform: uppercase;
   background: linear-gradient(90deg, #166534, #16a34a, #22c55e);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -2675,19 +2676,37 @@ body::before {
   max-width: 95%;
 }
 
-.wavy-image {
+.wavy-image-wrap {
   width: 100%;
-  max-width: 380px;
-  height: 220px;
-  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 50%, #86efac 100%);
+  max-width: 420px;
+  height: 240px;
   border-radius: 24px;
-  box-shadow: 0 12px 30px rgba(22, 101, 52, 0.12);
+  overflow: hidden;
+  box-shadow: 0 16px 36px -4px rgba(22, 101, 52, 0.22),
+              0 0 0 3px rgba(187, 247, 208, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0fdf4;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.wavy-image-wrap:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 20px 45px -4px rgba(22, 101, 52, 0.3);
+}
+
+.wavy-hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 @media (min-width: 768px) {
-  .wavy-image {
-    width: 40%;
-    height: 280px;
+  .wavy-image-wrap {
+    width: 42%;
+    height: 300px;
   }
 }
 

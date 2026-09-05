@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema(
     buyerType: { type: String, enum: ["consumer", "bulk"], default: "consumer" },
     fpo: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null }, // farmer -> parent FPO
     location: {
-      type: { type: String, enum: ["Point"], default: "Point" },
+      type: { type: String, enum: ["Point"], default: undefined },
       coordinates: { type: [Number], default: undefined }, // [lng, lat] GeoJSON order!
     },
     address: {
@@ -37,8 +37,8 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// GeoJSON 2dsphere index for geolocation lookups
-userSchema.index({ location: "2dsphere" });
+// GeoJSON 2dsphere index for geolocation lookups (sparse so users without coordinates save cleanly)
+userSchema.index({ location: "2dsphere" }, { sparse: true });
 
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();

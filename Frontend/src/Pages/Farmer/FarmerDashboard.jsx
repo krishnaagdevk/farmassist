@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import api from "../../lib/api";
 import {
   Sparkles,
@@ -6,23 +6,23 @@ import {
   Package,
   DollarSign,
   PlusCircle,
-  FileSpreadsheet,
-  Calendar,
-  AlertCircle,
+  BarChart3,
+  RefreshCw,
+  Tag,
   CheckCircle2,
+  AlertCircle,
+  ChevronRight,
 } from "lucide-react";
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   Tooltip,
   CartesianGrid,
   Area,
   AreaChart,
+  Line,
 } from "recharts";
-import "./FarmerDashboard.css";
 
 export default function FarmerDashboard() {
   const [myListings, setMyListings] = useState([]);
@@ -30,7 +30,9 @@ export default function FarmerDashboard() {
   const [crops, setCrops] = useState([]);
   const [demandForecast, setDemandForecast] = useState(null);
   const [priceAdvice, setPriceAdvice] = useState(null);
-  const [activeTab, setActiveTab] = useState("overview"); // "overview" | "new-listing" | "bulk"
+  const [activeTab, setActiveTab] = useState("overview"); // "overview" | "new-listing"
+  const [formMsg, setFormMsg] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   // New Listing Form State
   const [formData, setFormData] = useState({
@@ -42,38 +44,94 @@ export default function FarmerDashboard() {
     pricePerKg: "28",
     minOrderKg: "5",
   });
-  const [formMsg, setFormMsg] = useState("");
+  const [forecastCrop, setForecastCrop] = useState("tomato");
+  const [forecastDistrict, setForecastDistrict] = useState("Ghaziabad");
+  const [loadingForecast, setLoadingForecast] = useState(false);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
+  const INDIAN_DISTRICTS = [
+    "Ghaziabad",
+    "Delhi NCR",
+    "Lucknow",
+    "Agra",
+    "Meerut",
+    "Kanpur",
+    "Varanasi",
+    "Patna",
+    "Jaipur",
+    "Pune",
+    "Nashik",
+    "Indore",
+    "Ahmedabad",
+    "Bengaluru",
+    "Hyderabad",
+    "Guntur",
+    "Bhopal",
+  ];
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
-      const [listingsRes, cropsRes, demandRes, priceRes] = await Promise.all([
+      const [listingsRes, cropsRes] = await Promise.all([
         api.get("/api/listings/mine"),
         api.get("/api/crops"),
-        api.get("/api/insights/demand?crop=tomato&district=Ghaziabad&horizon=14"),
-        api.get("/api/insights/suggest-price?district=Ghaziabad"),
       ]);
 
       setMyListings(listingsRes.data.listings || []);
       setStats(listingsRes.data.stats);
-      setCrops(cropsRes.data.crops || []);
-      setDemandForecast(demandRes.data.forecast);
-      setPriceAdvice(priceRes.data);
+      const fetchedCrops = cropsRes.data.crops || [];
+      setCrops(fetchedCrops);
 
-      if (cropsRes.data.crops?.length > 0) {
-        setFormData((prev) => ({ ...prev, cropId: cropsRes.data.crops[0]._id }));
+      if (fetchedCrops.length > 0) {
+        setFormData((prev) => ({ ...prev, cropId: fetchedCrops[0]._id }));
       }
     } catch (e) {
       console.error("Farmer dashboard fetch error:", e);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  const fetchForecastData = useCallback(
+    async (signal) => {
+      setLoadingForecast(true);
+      try {
+        const cropSlug = forecastCrop.toLowerCase();
+        const [demandRes, priceRes] = await Promise.all([
+          api.get(
+            `/api/insights/demand?crop=${encodeURIComponent(cropSlug)}&district=${encodeURIComponent(forecastDistrict)}&horizon=14`,
+            signal ? { signal } : {}
+          ),
+          api.get(
+            `/api/insights/suggest-price?district=${encodeURIComponent(forecastDistrict)}&crop=${encodeURIComponent(cropSlug)}`,
+            signal ? { signal } : {}
+          ),
+        ]);
+        setDemandForecast(demandRes.data.forecast);
+        setPriceAdvice(priceRes.data);
+      } catch (e) {
+        if (!signal?.aborted) {
+          console.error("Forecast fetch error:", e);
+        }
+      } finally {
+        if (!signal?.aborted) {
+          setLoadingForecast(false);
+        }
+      }
+    },
+    [forecastCrop, forecastDistrict]
+  );
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchForecastData(controller.signal);
+    return () => controller.abort();
+  }, [fetchForecastData]);
 
   const handleCreateListing = async (e) => {
     e.preventDefault();
     setFormMsg("");
+    setSubmitting(true);
     try {
       await api.post("/api/listings", {
         cropId: formData.cropId,
@@ -90,93 +148,129 @@ export default function FarmerDashboard() {
       setActiveTab("overview");
     } catch (err) {
       setFormMsg(`❌ Error: ${err.response?.data?.error || "Failed to create listing"}`);
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="farmer-dashboard-page">
-      <div className="farmer-header-banner">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 font-sans">
+      {/* Header Banner */}
+      <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/80 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <h1>Farmer Command & Insights Hub</h1>
-          <p>Direct supply lot management, AI demand forecasting & transparent market price advisor.</p>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">
+              Kisan Producer Hub
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            Farmer Command & Insights Hub
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-600 mt-1">
+            Direct supply lot management, AI demand forecasting & transparent market price advice.
+          </p>
         </div>
 
-        <div className="dashboard-nav-tabs">
+        {/* Tab Switcher Controls */}
+        <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 w-full md:w-auto">
           <button
-            className={`tab-btn ${activeTab === "overview" ? "active" : ""}`}
+            className={`flex-1 md:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              activeTab === "overview"
+                ? "bg-white text-emerald-800 shadow-sm"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
             onClick={() => setActiveTab("overview")}
           >
-            My Produce & AI Insights
+            Produce & AI Insights
           </button>
           <button
-            className={`tab-btn ${activeTab === "new-listing" ? "active" : ""}`}
+            className={`flex-1 md:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              activeTab === "new-listing"
+                ? "bg-emerald-600 text-white shadow-sm"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
             onClick={() => setActiveTab("new-listing")}
           >
-            <PlusCircle size={16} />
+            <PlusCircle size={15} />
             <span>List Harvest Lot</span>
           </button>
         </div>
       </div>
 
-      {/* 4 Core Summary Stat Cards */}
-      <div className="farmer-stats-grid">
-        <div className="stat-card">
-          <div className="stat-icon green">
-            <Package size={22} />
+      {/* 4 Core Summary Metric Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        {/* Stat 1 */}
+        <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+            <Package size={24} />
           </div>
           <div>
-            <span className="stat-name">Active Listings</span>
-            <strong className="stat-number">{stats?.activeListings || myListings.length}</strong>
+            <span className="text-xs text-slate-500 font-medium block">Active Listings</span>
+            <strong className="text-xl sm:text-2xl font-black text-slate-900">
+              {stats?.activeListings || myListings.length}
+            </strong>
           </div>
         </div>
 
-        <div className="stat-card">
-          <div className="stat-icon blue">
-            <TrendingUp size={22} />
+        {/* Stat 2 */}
+        <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0">
+            <TrendingUp size={24} />
           </div>
           <div>
-            <span className="stat-name">Available Inventory</span>
-            <strong className="stat-number">
+            <span className="text-xs text-slate-500 font-medium block">Available Inventory</span>
+            <strong className="text-xl sm:text-2xl font-black text-slate-900">
               {((stats?.totalGramsAvailable || 450000) / 1000).toFixed(0)} kg
             </strong>
           </div>
         </div>
 
-        <div className="stat-card">
-          <div className="stat-icon orange">
-            <DollarSign size={22} />
+        {/* Stat 3 */}
+        <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0">
+            <DollarSign size={24} />
           </div>
           <div>
-            <span className="stat-name">Total Sold Produce</span>
-            <strong className="stat-number">
+            <span className="text-xs text-slate-500 font-medium block">Total Sold Produce</span>
+            <strong className="text-xl sm:text-2xl font-black text-slate-900">
               {((stats?.totalGramsSold || 185000) / 1000).toFixed(0)} kg
             </strong>
           </div>
         </div>
 
-        <div className="stat-card highlight">
-          <div className="stat-icon gold">
-            <Sparkles size={22} />
+        {/* Stat 4 - Highlight */}
+        <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 shadow-sm flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-amber-200 text-amber-800 flex items-center justify-center flex-shrink-0 shadow-sm">
+            <Sparkles size={24} />
           </div>
           <div>
-            <span className="stat-name">Extra Farmer Net Profit</span>
-            <strong className="stat-number">+₹18,400</strong>
-            <span className="stat-caption">vs Mandi Rates</span>
+            <span className="text-xs text-amber-800 font-semibold block">Extra Net Profit</span>
+            <strong className="text-xl sm:text-2xl font-black text-amber-900">+₹18,400</strong>
+            <span className="text-[10px] text-amber-700 block font-medium">vs APMC Mandi Rates</span>
           </div>
         </div>
       </div>
 
       {activeTab === "new-listing" ? (
         /* Create Listing Form */
-        <div className="form-container-card">
-          <h2>List New Harvest Batch Lot</h2>
-          <form onSubmit={handleCreateListing} className="listing-create-form">
-            <div className="form-group">
-              <label>Select Crop</label>
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm max-w-3xl mx-auto space-y-6">
+          <div className="border-b border-slate-100 pb-4">
+            <h2 className="text-xl font-extrabold text-slate-900">List New Harvest Batch Lot</h2>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              Publish grade-sorted farm harvest batches directly to local retail consumers and bulk buyers.
+            </p>
+          </div>
+
+          <form onSubmit={handleCreateListing} className="space-y-5">
+            {/* Select Crop */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">Select Crop</label>
               <select
                 value={formData.cropId}
                 onChange={(e) => setFormData({ ...formData, cropId: e.target.value })}
                 required
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white min-h-[44px]"
               >
                 {crops.map((c) => (
                   <option key={c._id} value={c._id}>
@@ -186,184 +280,313 @@ export default function FarmerDashboard() {
               </select>
             </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label>Variety / Cultivar</label>
+            {/* Variety & Grade */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">Variety / Cultivar</label>
                 <input
                   type="text"
                   value={formData.variety}
                   onChange={(e) => setFormData({ ...formData, variety: e.target.value })}
+                  placeholder="e.g. Desi Special, Hybrid 402"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm min-h-[44px]"
                 />
               </div>
-              <div className="form-group">
-                <label>Quality Grade</label>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">Quality Grade</label>
                 <select
                   value={formData.grade}
                   onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white min-h-[44px]"
                 >
-                  <option value="A">Grade A (Premium)</option>
-                  <option value="B">Grade B (Standard)</option>
-                  <option value="C">Grade C (Economy)</option>
+                  <option value="A">Grade A (Export / Super Premium)</option>
+                  <option value="B">Grade B (Standard Market)</option>
+                  <option value="C">Grade C (Processing / Economy)</option>
                 </select>
               </div>
             </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label>Total Available Harvest (kg)</label>
+            {/* Quantity & Asking Price */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">Total Available Harvest (kg)</label>
                 <input
                   type="number"
                   min="1"
                   value={formData.totalKg}
                   onChange={(e) => setFormData({ ...formData, totalKg: e.target.value })}
                   required
+                  placeholder="e.g. 250"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm min-h-[44px]"
                 />
               </div>
-              <div className="form-group">
-                <label>Your Asking Price (₹/kg)</label>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">Asking Price (₹/kg)</label>
                 <input
                   type="number"
                   min="1"
                   value={formData.pricePerKg}
                   onChange={(e) => setFormData({ ...formData, pricePerKg: e.target.value })}
                   required
+                  placeholder="e.g. 28"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm min-h-[44px]"
                 />
               </div>
             </div>
 
-            <div className="form-group checkbox-wrapper">
-              <label>
+            {/* Organic Checkbox */}
+            <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200">
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={formData.organic}
                   onChange={(e) => setFormData({ ...formData, organic: e.target.checked })}
+                  className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
                 />
-                <span>🌱 100% Organic certified cultivation</span>
+                <span className="text-xs font-bold text-emerald-900">
+                  🌱 100% Certified Organic cultivation (Chemical & Pesticide Free)
+                </span>
               </label>
             </div>
 
-            <button type="submit" className="submit-listing-btn">
-              Publish Lot to Marketplace
+            {/* Submit Action */}
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-sm py-3 rounded-2xl shadow-sm hover:shadow transition active:scale-[0.99] disabled:opacity-50 min-h-[44px]"
+            >
+              {submitting ? "Publishing Lot..." : "Publish Harvest Lot to Marketplace"}
             </button>
-            {formMsg && <div className="form-feedback">{formMsg}</div>}
+
+            {formMsg && (
+              <div className="p-3 rounded-xl bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-800 text-center">
+                {formMsg}
+              </div>
+            )}
           </form>
         </div>
       ) : (
-        /* Overview: Demand Chart + Price Advisor + Active Listings */
-        <div className="dashboard-content-grid">
-          {/* AI Demand Forecasting Chart Card */}
-          <div className="chart-card">
-            <div className="chart-header">
+        /* Overview Grid */
+        <div className="space-y-6 sm:space-y-8">
+          {/* AI Insights: Demand Forecast Chart + Price Advisor */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* 14-Day Demand Forecast Chart Card (2 Columns on large screens) */}
+            <div className="lg:col-span-2 bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm flex flex-col justify-between space-y-4">
               <div>
-                <h3>14-Day Regional AI Demand Forecast</h3>
-                <p>Multi-step time-series prediction with 80% confidence interval band</p>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="text-base sm:text-lg font-extrabold text-slate-900">
+                      14-Day Regional AI Demand Forecast
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Multi-step time-series prediction with 80% confidence interval band
+                    </p>
+                  </div>
+                  <span className="self-start sm:self-auto px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider text-emerald-800 bg-emerald-100 border border-emerald-300">
+                    LightGBM Model
+                  </span>
+                </div>
+
+                {/* Filter Controls Row */}
+                <div className="flex flex-wrap items-center gap-3 py-3">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-bold text-slate-600">Crop:</label>
+                    <select
+                      value={forecastCrop}
+                      onChange={(e) => setForecastCrop(e.target.value)}
+                      className="px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+                    >
+                      {crops.length > 0 ? (
+                        crops.map((c) => (
+                          <option key={c._id} value={c.slug || c.name.toLowerCase()}>
+                            {c.name} {c.nameHi ? `(${c.nameHi})` : ""}
+                          </option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="tomato">Tomato (टमाटर)</option>
+                          <option value="onion">Onion (प्याज)</option>
+                          <option value="potato">Potato (आलू)</option>
+                          <option value="wheat">Wheat (गेहूं)</option>
+                          <option value="rice">Rice (चावल)</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-bold text-slate-600">Mandi/District:</label>
+                    <select
+                      value={forecastDistrict}
+                      onChange={(e) => setForecastDistrict(e.target.value)}
+                      className="px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+                    >
+                      {INDIAN_DISTRICTS.map((d) => (
+                        <option key={d} value={d}>
+                          {d}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <button
+                    onClick={() => fetchForecastData()}
+                    disabled={loadingForecast}
+                    className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+                  >
+                    <RefreshCw size={12} className={loadingForecast ? "animate-spin" : ""} />
+                    <span>{loadingForecast ? "Updating..." : "Refresh"}</span>
+                  </button>
+                </div>
               </div>
-              <span className="model-tag">LightGBM Model</span>
-            </div>
 
-            <div className="chart-wrapper">
-              {demandForecast?.points ? (
-                <ResponsiveContainer width="100%" height={260}>
-                  <AreaChart data={demandForecast.points}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} unit=" kg" />
-                    <Tooltip
-                      formatter={(val, name) => [
-                        `${val} kg`,
-                        name === "yhat" ? "Forecast Demand" : name === "hi" ? "Upper Band" : "Lower Band",
-                      ]}
-                    />
-                    <Area type="monotone" dataKey="hi" stroke="none" fill="#dcfce7" fillOpacity={0.5} />
-                    <Area type="monotone" dataKey="lo" stroke="none" fill="#ffffff" fillOpacity={1} />
-                    <Line
-                      type="monotone"
-                      dataKey="yhat"
-                      stroke="#16a34a"
-                      strokeWidth={3}
-                      dot={{ r: 3, fill: "#16a34a" }}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="loading-chart">Loading forecast trajectory...</div>
-              )}
-            </div>
+              {/* Chart Visualizer */}
+              <div className="w-full h-64 sm:h-72">
+                {demandForecast?.points ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={demandForecast.points} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 10 }} unit="kg" />
+                      <Tooltip
+                        formatter={(val, name) => [
+                          `${val} kg`,
+                          name === "yhat" ? "Forecast Demand" : name === "hi" ? "Upper Band" : "Lower Band",
+                        ]}
+                      />
+                      <Area type="monotone" dataKey="hi" stroke="none" fill="#dcfce7" fillOpacity={0.6} />
+                      <Area type="monotone" dataKey="lo" stroke="none" fill="#ffffff" fillOpacity={1} />
+                      <Line
+                        type="monotone"
+                        dataKey="yhat"
+                        stroke="#16a34a"
+                        strokeWidth={2.5}
+                        dot={{ r: 3, fill: "#16a34a" }}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-xs text-slate-400">
+                    Loading forecast trajectory...
+                  </div>
+                )}
+              </div>
 
-            <div className="chart-benchmark-caption">
-              <span>
-                🎯 <strong>Accuracy:</strong> LightGBM 8.4% MAPE vs 14.1% Seasonal-Naive Baseline
-              </span>
-            </div>
-          </div>
-
-          {/* AI Price Advisor Card */}
-          <div className="price-advisor-card">
-            <div className="advisor-header">
-              <Sparkles size={20} className="sparkle" />
-              <h3>AI Market Price Advisor</h3>
-            </div>
-
-            <div className="suggested-price-box">
-              <span className="suggested-label">Recommended Listing Band</span>
-              <div className="suggested-price-val">
-                ₹{((priceAdvice?.bandLoPaise || 2400) / 100).toFixed(0)} - ₹
-                {((priceAdvice?.bandHiPaise || 3000) / 100).toFixed(0)}
-                <span className="per-kg">/ kg</span>
+              {/* Benchmark Tag */}
+              <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-500">
+                🎯 <strong className="text-slate-700">Accuracy:</strong> LightGBM 8.4% MAPE vs 14.1% Seasonal-Naive Baseline
               </div>
             </div>
 
-            <div className="advisor-benchmarks-list">
-              <div className="bench-item">
-                <span>Today's APMC Mandi Modal</span>
-                <strong>₹{((priceAdvice?.mandiTodayPaise || 1800) / 100).toFixed(0)}/kg</strong>
-              </div>
-              <div className="bench-item">
-                <span>City Retail Consumer Average</span>
-                <strong>₹{((priceAdvice?.retailTodayPaise || 3800) / 100).toFixed(0)}/kg</strong>
-              </div>
-            </div>
+            {/* AI Market Price Advisor Card (1 Column) */}
+            <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm flex flex-col justify-between space-y-4">
+              <div>
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+                  <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+                    <Sparkles size={16} />
+                  </div>
+                  <h3 className="text-base font-extrabold text-slate-900">AI Price Advisor</h3>
+                </div>
 
-            <div className="advisor-rationale">
-              <p>
+                {/* Price Band Box */}
+                <div className="my-4 p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 border border-emerald-200 text-center">
+                  <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider block">
+                    Recommended Listing Band
+                  </span>
+                  <div className="text-2xl sm:text-3xl font-black text-emerald-900 mt-1">
+                    ₹{((priceAdvice?.bandLoPaise || 2400) / 100).toFixed(0)} - ₹
+                    {((priceAdvice?.bandHiPaise || 3000) / 100).toFixed(0)}
+                    <span className="text-xs font-semibold text-emerald-700 ml-1">/ kg</span>
+                  </div>
+                </div>
+
+                {/* Mandi & Retail Benchmarks */}
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 text-xs">
+                    <span className="text-slate-600 font-medium">APMC Mandi Modal</span>
+                    <strong className="text-slate-900 font-bold">
+                      ₹{((priceAdvice?.mandiTodayPaise || 1800) / 100).toFixed(0)} / kg
+                    </strong>
+                  </div>
+
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 text-xs">
+                    <span className="text-slate-600 font-medium">City Retail Supermarket</span>
+                    <strong className="text-slate-900 font-bold">
+                      ₹{((priceAdvice?.retailTodayPaise || 3800) / 100).toFixed(0)} / kg
+                    </strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Rationale Notice */}
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 leading-relaxed">
                 💡 {priceAdvice?.rationale ||
                   "14-day regional demand is up +18%. Listing at ₹28/kg maximizes seller revenue while keeping prices 30% below retail."}
-              </p>
+              </div>
             </div>
           </div>
 
-          {/* My Active Listings Table */}
-          <div className="my-listings-table-card">
-            <h3>My Active Farm Produce Lots</h3>
+          {/* Active Farm Produce Lots Table Card */}
+          <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base sm:text-lg font-extrabold text-slate-900">
+                My Active Farm Produce Lots
+              </h3>
+              <span className="text-xs font-bold text-slate-500">
+                {myListings.length} Lot{myListings.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+
             {myListings.length === 0 ? (
-              <p className="no-listings-txt">No active listings. Click 'List Harvest Lot' above to create one.</p>
+              <div className="p-8 text-center text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl space-y-2">
+                <Package size={32} className="mx-auto text-slate-300" />
+                <p className="text-xs sm:text-sm font-medium">
+                  No active listings found. Click <strong>'List Harvest Lot'</strong> above to publish your first batch!
+                </p>
+              </div>
             ) : (
-              <div className="table-responsive">
-                <table className="listings-table">
+              <div className="overflow-x-auto -mx-5 sm:mx-0">
+                <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-[600px]">
                   <thead>
-                    <tr>
-                      <th>Crop</th>
-                      <th>Variety</th>
-                      <th>Grade</th>
-                      <th>Available</th>
-                      <th>Price</th>
-                      <th>Status</th>
+                    <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider text-[11px]">
+                      <th className="py-3 px-4">Crop</th>
+                      <th className="py-3 px-4">Variety</th>
+                      <th className="py-3 px-4">Grade</th>
+                      <th className="py-3 px-4">Available</th>
+                      <th className="py-3 px-4">Price</th>
+                      <th className="py-3 px-4 text-right">Status</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-100">
                     {myListings.map((l) => (
-                      <tr key={l._id}>
-                        <td>
-                          <strong>{l.crop?.name}</strong>
+                      <tr key={l._id} className="hover:bg-slate-50 transition">
+                        <td className="py-3.5 px-4 font-bold text-slate-900">
+                          {l.crop?.name || "Crop Lot"}
                         </td>
-                        <td>{l.variety}</td>
-                        <td>
-                          <span className="grade-pill">Grade {l.grade}</span>
+                        <td className="py-3.5 px-4 text-slate-600">{l.variety}</td>
+                        <td className="py-3.5 px-4">
+                          <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                            Grade {l.grade}
+                          </span>
                         </td>
-                        <td>{l.availableGrams / 1000} kg</td>
-                        <td>₹{(l.pricePaisePerKg / 100).toFixed(0)}/kg</td>
-                        <td>
-                          <span className={`status-pill ${l.status}`}>{l.status}</span>
+                        <td className="py-3.5 px-4 text-slate-800 font-semibold">
+                          {l.availableGrams / 1000} kg
+                        </td>
+                        <td className="py-3.5 px-4 font-bold text-emerald-700">
+                          ₹{(l.pricePaisePerKg / 100).toFixed(0)}/kg
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          <span
+                            className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
+                              l.status === "active"
+                                ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                                : "bg-slate-100 text-slate-600 border border-slate-200"
+                            }`}
+                          >
+                            {l.status}
+                          </span>
                         </td>
                       </tr>
                     ))}
@@ -377,3 +600,4 @@ export default function FarmerDashboard() {
     </div>
   );
 }
+

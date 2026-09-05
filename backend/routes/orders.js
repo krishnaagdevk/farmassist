@@ -1,17 +1,56 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const Order = require("../models/Order");
 const Listing = require("../models/Listing");
 const PriceBenchmark = require("../models/PriceBenchmark");
 const ChainAssumption = require("../models/ChainAssumption");
 const { reserve, release } = require("../services/inventory");
-const { calculateOrderTotals, quoteLogistics } = require("../services/pricing");
+const { calculateOrderTotals, quoteLogistics, distanceFromHubKm } = require("../services/pricing");
 const { verifyToken, requireRole } = require("../middleware/auth");
 
 const router = express.Router();
 
 /**
+ * Shared order loader with strict authorization check
+ */
+async function loadOwnedOrder(req, res) {
+  const { id } = req.params;
+  if (!id || !mongoose.isValidObjectId(id)) {
+    res.status(400).json({ error: "invalid_order_id" });
+    return null;
+  }
+
+  const order = await Order.findById(id)
+    .populate("items.crop")
+    .populate("items.farmer", "name phone address")
+    .populate("buyer", "name email phone")
+    .populate({
+      path: "shipment",
+      populate: { path: "vehicle driver" },
+    })
+    .lean();
+
+  if (!order) {
+    res.status(404).json({ error: "order_not_found" });
+    return null;
+  }
+
+  const isOwner =
+    req.user.role === "admin" ||
+    order.buyer?._id?.toString() === req.user.sub ||
+    order.items.some((i) => i.farmer?._id?.toString() === req.user.sub);
+
+  if (!isOwner) {
+    res.status(403).json({ error: "unauthorized" });
+    return null;
+  }
+
+  return order;
+}
+
+/**
  * POST /api/orders
- * Buyer checkout: server calculates prices, reserves inventory atomically
+ * Buyer checkout: server calculates prices, reserves inventory atomically, calculates real delivery distance
  */
 router.post("/", verifyToken, async (req, res) => {
   const { items, deliveryAddress, deliverySlot } = req.body;
@@ -34,7 +73,7 @@ router.post("/", verifyToken, async (req, res) => {
       const { listingId, grams } = item;
       const weightGrams = parseInt(grams);
 
-      if (!listingId || isNaN(weightGrams) || weightGrams <= 0) {
+      if (!listingId || !mongoose.isValidObjectId(listingId) || isNaN(weightGrams) || weightGrams <= 0) {
         throw { status: 400, message: "invalid_item_parameters" };
       }
 
@@ -60,9 +99,14 @@ router.post("/", verifyToken, async (req, res) => {
       });
     }
 
-    // 2. Logistics quote calculation
+    // 2. Real destination-based logistics fee calculation
     const totalGrams = enrichedItems.reduce((s, i) => s + i.grams, 0);
-    const logisticsFeePaise = quoteLogistics({ distanceKm: 12, grams: totalGrams });
+    const coords = deliveryAddress.point.coordinates || [];
+    // coordinates are [lng, lat] in GeoJSON
+    const dropLng = coords[0];
+    const dropLat = coords[1];
+    const distanceKm = distanceFromHubKm(dropLat, dropLng);
+    const logisticsFeePaise = quoteLogistics({ distanceKm, grams: totalGrams });
 
     // 3. Central pricing authority calculation
     const totals = calculateOrderTotals({
@@ -96,33 +140,39 @@ router.post("/", verifyToken, async (req, res) => {
         pincode: deliveryAddress.pincode || "201001",
         point: {
           type: "Point",
-          coordinates: deliveryAddress.point.coordinates || [77.4538, 28.6692],
+          coordinates: coords.length === 2 ? coords : [77.4538, 28.6692],
         },
       },
-      deliverySlot: deliverySlot || {
-        date: new Date(Date.now() + 86400000),
-        startHour: 9,
-        endHour: 18,
-      },
-      status: process.env.MOCK_PAYMENTS === "true" ? "paid" : "pending_payment",
+      deliverySlot: deliverySlot || "Morning (7 AM - 11 AM)",
+      status: "pending_payment",
       payouts,
       statusLog: [
         {
-          status: process.env.MOCK_PAYMENTS === "true" ? "paid" : "pending_payment",
+          status: "pending_payment",
           by: req.user.sub,
-          note: "Order placed by buyer",
+          note: "Order created, stock reserved, awaiting payment",
         },
       ],
     });
 
-    return res.status(201).json({ order });
+    return res.status(201).json({
+      ok: true,
+      order: {
+        id: order._id,
+        orderNo: order.orderNo,
+        totalPaise: order.totalPaise,
+        produceSubtotalPaise: order.produceSubtotalPaise,
+        logisticsFeePaise: order.logisticsFeePaise,
+        platformFeePaise: order.platformFeePaise,
+        status: order.status,
+      },
+    });
   } catch (err) {
-    // Compensate and release any stock reserved prior to failure
+    // Rollback reserved stock on failure
     for (const resItem of reservedListings) {
       await release(resItem.listingId, resItem.grams);
     }
-
-    console.error("Order placement error:", err);
+    console.error("Order creation error:", err);
     return res.status(err.status || 500).json({
       error: err.message || "order_creation_failed",
       listingId: err.listingId,
@@ -132,35 +182,40 @@ router.post("/", verifyToken, async (req, res) => {
 
 /**
  * GET /api/orders
- * Role-scoped order list
+ * Buyer order history / Farmer's related orders
  */
 router.get("/", verifyToken, async (req, res) => {
   try {
+    const { role, sub } = req.user;
     const { status, page = 1, limit = 20 } = req.query;
-    const pageNum = Math.max(1, parseInt(page) || 1);
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 20));
 
-    let query = {};
+    const query = {};
 
-    if (req.user.role === "buyer") {
-      query.buyer = req.user.sub;
-    } else if (["farmer", "fpo"].includes(req.user.role)) {
-      query["items.farmer"] = req.user.sub;
+    if (role === "buyer") {
+      query.buyer = sub;
+    } else if (role === "farmer") {
+      query["items.farmer"] = sub;
     }
 
-    if (status) {
+    if (status && typeof status === "string") {
       query.status = status;
     }
 
-    const total = await Order.countDocuments(query);
-    const orders = await Order.find(query)
-      .populate("items.crop", "name nameHi category imageUrl")
-      .populate("items.farmer", "name phone address")
-      .populate("buyer", "name email phone")
-      .sort({ createdAt: -1 })
-      .skip((pageNum - 1) * limitNum)
-      .limit(limitNum)
-      .lean();
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit) || 20));
+    const skip = (pageNum - 1) * limitNum;
+
+    const [orders, total] = await Promise.all([
+      Order.find(query)
+        .populate("items.crop")
+        .populate("items.farmer", "name phone")
+        .populate("buyer", "name email phone")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+      Order.countDocuments(query),
+    ]);
 
     return res.json({
       orders,
@@ -179,32 +234,12 @@ router.get("/", verifyToken, async (req, res) => {
 
 /**
  * GET /api/orders/:id
- * Single order details
+ * Single order details (Authenticated & Authorized)
  */
 router.get("/:id", verifyToken, async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id)
-      .populate("items.crop")
-      .populate("items.farmer", "name phone address")
-      .populate("buyer", "name email phone")
-      .populate({
-        path: "shipment",
-        populate: { path: "vehicle driver" },
-      })
-      .lean();
-
-    if (!order) return res.status(404).json({ error: "order_not_found" });
-
-    // Authorization check
-    const isOwner =
-      req.user.role === "admin" ||
-      order.buyer._id.toString() === req.user.sub ||
-      order.items.some((i) => i.farmer._id.toString() === req.user.sub);
-
-    if (!isOwner) {
-      return res.status(403).json({ error: "unauthorized" });
-    }
-
+    const order = await loadOwnedOrder(req, res);
+    if (!order) return;
     return res.json({ order });
   } catch (err) {
     console.error("Order detail error:", err);
@@ -214,15 +249,12 @@ router.get("/:id", verifyToken, async (req, res) => {
 
 /**
  * GET /api/orders/:id/ledger
- * Transparency ledger breakdown comparing Direct vs Traditional Supply Chain
+ * Transparency ledger breakdown comparing Direct vs Traditional Supply Chain (Authenticated & Authorized)
  */
-router.get("/:id/ledger", async (req, res) => {
+router.get("/:id/ledger", verifyToken, async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id)
-      .populate("items.crop")
-      .lean();
-
-    if (!order) return res.status(404).json({ error: "order_not_found" });
+    const order = await loadOwnedOrder(req, res);
+    if (!order) return;
 
     let assumptions = await ChainAssumption.findOne().lean();
     if (!assumptions) {
@@ -237,11 +269,9 @@ router.get("/:id/ledger", async (req, res) => {
     const farmerReceivesPaise = order.produceSubtotalPaise;
     const consumerPaysPaise = order.totalPaise;
     const directFarmerSharePct = parseFloat(
-      ((farmerReceivesPaise / consumerPaysPaise) * 100).toFixed(1)
+      ((farmerReceivesPaise / (consumerPaysPaise || 1)) * 100).toFixed(1)
     );
 
-    // Traditional supply chain estimation
-    // In traditional mandi system: farmer gets ~40-45% of retail price
     const traditionalConsumerPaysPaise = Math.round(consumerPaysPaise * 1.25);
     const commissionAgentPaise = Math.round(
       traditionalConsumerPaysPaise * (assumptions.commissionAgentPct / 100)
@@ -258,7 +288,7 @@ router.get("/:id/ledger", async (req, res) => {
     );
     const traditionalFarmerSharePct = parseFloat(
       (
-        (traditionalFarmerReceivesPaise / traditionalConsumerPaysPaise) *
+        (traditionalFarmerReceivesPaise / (traditionalConsumerPaysPaise || 1)) *
         100
       ).toFixed(1)
     );
@@ -270,11 +300,10 @@ router.get("/:id/ledger", async (req, res) => {
         100
       ).toFixed(1)
     );
-    const consumerSavesPaise =
-      traditionalConsumerPaysPaise - consumerPaysPaise;
+    const consumerSavesPaise = traditionalConsumerPaysPaise - consumerPaysPaise;
     const consumerSavesPct = parseFloat(
       (
-        (consumerSavesPaise / traditionalConsumerPaysPaise) *
+        (consumerSavesPaise / (traditionalConsumerPaysPaise || 1)) *
         100
       ).toFixed(1)
     );
@@ -317,8 +346,8 @@ router.get("/:id/ledger", async (req, res) => {
  */
 router.post("/:id/cancel", verifyToken, async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id);
-    if (!order) return res.status(404).json({ error: "order_not_found" });
+    const order = await loadOwnedOrder(req, res);
+    if (!order) return;
 
     if (["delivered", "cancelled"].includes(order.status)) {
       return res.status(400).json({ error: "cannot_cancel_in_current_status" });
@@ -329,15 +358,18 @@ router.post("/:id/cancel", verifyToken, async (req, res) => {
       await release(item.listing, item.grams);
     }
 
-    order.status = "cancelled";
-    order.statusLog.push({
+    await Order.findByIdAndUpdate(order._id, {
       status: "cancelled",
-      by: req.user.sub,
-      note: req.body.reason || "Cancelled by user",
+      $push: {
+        statusLog: {
+          status: "cancelled",
+          by: req.user.sub,
+          note: typeof req.body.reason === "string" ? req.body.reason : "Cancelled by user",
+        },
+      },
     });
-    await order.save();
 
-    return res.json({ ok: true, order });
+    return res.json({ ok: true, message: "order_cancelled" });
   } catch (err) {
     console.error("Cancel order error:", err);
     return res.status(500).json({ error: "cancel_failed" });

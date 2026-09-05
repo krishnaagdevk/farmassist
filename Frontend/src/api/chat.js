@@ -1,25 +1,18 @@
-import axios from "axios";
+import api from "../lib/api";
 
-const API = axios.create({
-  baseURL: "http://localhost:5000/api/chat",
-});
-
-// Automatically attach token
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+const API_BASE =
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_API_BASE ||
+  (import.meta.env.DEV ? "http://localhost:5000" : "");
 
 // send a question
-export const sendChat = (data) => API.post("/send", data);
+export const sendChat = (data) => api.post("/api/chat/send", data);
 
 // stream AI response (SSE)
 export const streamChat = async (data, onMessage, onComplete, onError) => {
   try {
-    const url = new URL("http://localhost:5000/api/chat/stream");
+    const base = API_BASE.replace(/\/$/, "");
+    const url = new URL(`${base}/api/chat/stream`);
     url.search = new URLSearchParams(data).toString();
 
     const token = localStorage.getItem("token");
@@ -28,7 +21,7 @@ export const streamChat = async (data, onMessage, onComplete, onError) => {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,   // ✅ add JWT here
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     });
 

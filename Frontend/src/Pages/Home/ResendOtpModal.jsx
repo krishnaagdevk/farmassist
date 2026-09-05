@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { farmerForgotPassword } from "../../api/auth";
+import api from "../../lib/api";
 
 export default function ResetOtpModal({ onClose, setModal }) {
   const [otp, setOtp] = useState("");
@@ -10,7 +10,7 @@ export default function ResetOtpModal({ onClose, setModal }) {
 
   const handleReset = async () => {
     try {
-      const res = await farmerForgotPassword({
+      await api.post("/api/auth/forgot-password", {
         email,
         otp,
         newPassword,
@@ -18,11 +18,10 @@ export default function ResetOtpModal({ onClose, setModal }) {
       setMessage("Password reset successful! Please login.");
       localStorage.removeItem("resetEmail");
 
-      // ✅ Redirect back to login form
       setTimeout(() => {
-        setModal(null);
-        onClose();
-      }, 2000);
+        if (setModal) setModal(null);
+        if (onClose) onClose();
+      }, 1500);
     } catch (err) {
       setMessage(err.response?.data?.error || "Failed to reset password");
     }

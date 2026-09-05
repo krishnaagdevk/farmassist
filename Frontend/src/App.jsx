@@ -17,6 +17,8 @@ import OrderTrack from "./Pages/Orders/OrderTrack";
 import FarmerDashboard from "./Pages/Farmer/FarmerDashboard";
 import DispatchBoard from "./Pages/Dispatch/DispatchBoard";
 import DriverRun from "./Pages/Driver/DriverRun";
+import BulkMarket from "./Pages/Bulk/BulkMarket";
+import FPODashboard from "./Pages/FPO/FPODashboard";
 
 function App() {
   return (
@@ -31,6 +33,7 @@ function App() {
           <Route path="/market" element={<Storefront />} />
           <Route path="/market/:id" element={<ListingDetail />} />
           <Route path="/cart" element={<Cart />} />
+          <Route path="/bulk" element={<BulkMarket />} />
           <Route path="/chat" element={<Chatbox />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/advisory" element={<Dashboard />} />
@@ -59,6 +62,16 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["farmer", "fpo", "admin"]}>
                 <FarmerDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* FPO Federation & Collective Pooling Hub */}
+          <Route
+            path="/fpo"
+            element={
+              <ProtectedRoute allowedRoles={["fpo", "farmer", "admin"]}>
+                <FPODashboard />
               </ProtectedRoute>
             }
           />

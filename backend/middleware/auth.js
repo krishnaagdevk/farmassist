@@ -1,8 +1,8 @@
 const jwt = require("jsonwebtoken");
 
 const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET && process.env.NODE_ENV === "production") {
-  console.error("JWT_SECRET missing in production!");
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET environment variable is required.");
 }
 
 function verifyToken(req, res, next) {
@@ -11,7 +11,7 @@ function verifyToken(req, res, next) {
 
   if (!token) return res.status(401).json({ error: "no_token" });
 
-  jwt.verify(token, process.env.JWT_SECRET || "supersecret", (err, decoded) => {
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
     if (err) return res.status(403).json({ error: "invalid_token" });
 
     req.user = decoded; // { sub: user._id, role: "farmer/buyer/admin/fpo/driver" }
@@ -24,7 +24,7 @@ function optionalToken(req, res, next) {
   const token = authHeader && authHeader.split(" ")[1];
   if (!token) return next();
 
-  jwt.verify(token, process.env.JWT_SECRET || "supersecret", (err, decoded) => {
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
     if (!err) {
       req.user = decoded;
     }

@@ -1,10 +1,8 @@
 require("dotenv").config();
 const { loadEnv } = require("./config/env");
 
-// Validate critical env variables (fails closed in production)
-if (process.env.NODE_ENV === "production") {
-  loadEnv();
-}
+// Validate critical env variables unconditionally at boot
+loadEnv();
 
 const express = require("express");
 const mongoose = require("mongoose");
@@ -28,25 +26,28 @@ const ordersRoutes = require("./routes/orders");
 const paymentsRoutes = require("./routes/payments");
 const logisticsRoutes = require("./routes/logistics");
 const insightsRoutes = require("./routes/insights");
+const bulkRoutes = require("./routes/bulkOrders");
 
 const app = express();
+
+// Trust reverse proxies (nginx, Cloudflare, Render, etc.) for rate limiters
+app.set("trust proxy", 1);
 
 // Security headers
 app.use(helmet({ contentSecurityPolicy: false }));
 
-// CORS configuration
+// CORS configuration — strict allowlist matching
 const allowedOrigins = process.env.CORS_ORIGINS
-  ? process.env.CORS_ORIGINS.split(",")
+  ? process.env.CORS_ORIGINS.split(",").map((s) => s.trim())
   : ["http://localhost:5173", "http://localhost:3000"];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== "production") {
-        callback(null, true);
-      } else {
-        callback(new Error("CORS origin not permitted"));
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
       }
+      return callback(new Error("CORS origin not permitted"));
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
@@ -60,7 +61,7 @@ app.use(cookieParser());
 
 // Express Session configuration
 const sessionConfig = {
-  secret: process.env.SESSION_SECRET || "agridirect-session-secret-local-dev-2026",
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -98,48 +99,33 @@ app.use("/api/orders", ordersRoutes);
 app.use("/api/payments", paymentsRoutes);
 app.use("/api/logistics", logisticsRoutes);
 app.use("/api/insights", insightsRoutes);
+app.use("/api/bulk", bulkRoutes);
 
-// Health check
+// Health check endpoint
 app.get("/health", (req, res) => {
   res.json({
     status: "ok",
-    service: "AgriDirect API",
-    time: new Date().toISOString(),
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || "development",
   });
 });
 
-// Terminal Error Handler
+// Centralized error handler
 app.use(errorHandler);
 
+// Database Connection & Server Boot
 const PORT = process.env.PORT || 5000;
+const MONGO_URI = process.env.MONGO_URI;
 
-function startServer() {
-  app.listen(PORT, () =>
-    console.log(`🚀 AgriDirect API running on http://localhost:${PORT}`)
-  );
-}
-
-if (process.env.MONGO_URI) {
-  // Prevent background connection errors from crashing the process
-  mongoose.connection.on("error", (err) => {
-    console.error("MongoDB background error:", err.message);
-  });
-
-  mongoose
-    .connect(process.env.MONGO_URI, {
-      serverSelectionTimeoutMS: 5000, // fail fast — don't hang nodemon
-    })
-    .then(() => {
-      console.log("✅ MongoDB connected");
-      startServer();
-    })
-    .catch((err) => {
-      console.warn(`⚠️  MongoDB unavailable (${err.message}). Starting without DB — auth/data routes will error until DB is reachable.`);
-      startServer();
+mongoose
+  .connect(MONGO_URI)
+  .then(() => {
+    console.log("✅ MongoDB connection established");
+    app.listen(PORT, () => {
+      console.log(`🚀 AgriDirect Backend Server running on port ${PORT}`);
     });
-} else {
-  console.warn("⚠️  MONGO_URI not set. Starting without database.");
-  startServer();
-}
-
-module.exports = app;
+  })
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err.message);
+    process.exit(1);
+  });

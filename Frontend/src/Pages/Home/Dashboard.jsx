@@ -13,6 +13,7 @@ import {
   PhoneCall,
   ArrowUpRight,
 } from "lucide-react";
+import farmerAiHero from "../../assets/images/farmer-ai-hero.jpg";
 
 export default function Dashboard() {
   // ---------- UI / Modal State ----------
@@ -31,13 +32,9 @@ export default function Dashboard() {
   // =====================================================
   const [locationInput, setLocationInput] = useState("");
   const [weatherDisplayData, setWeatherDisplayData] = useState(null);
-  const [loadingWeather, setLoadingWeather] = useState(false);
-  const [weatherError, setWeatherError] = useState(null);
   const [activeWeatherTab, setActiveWeatherTab] = useState("current");
 
   async function loadWeatherData(params = { location: "Ghaziabad" }) {
-    setLoadingWeather(true);
-    setWeatherError(null);
     try {
       const res = await api.get("/api/weather", {
         params,
@@ -45,9 +42,6 @@ export default function Dashboard() {
       setWeatherDisplayData(res.data.weather);
     } catch (err) {
       console.error("Weather error:", err);
-      setWeatherError("Failed to fetch weather.");
-    } finally {
-      setLoadingWeather(false);
     }
   }
 
@@ -81,7 +75,7 @@ export default function Dashboard() {
   // =====================================================
   // IMAGE DIAGNOSE
   // =====================================================
-   const fileInputRef = useRef(null);
+  const fileInputRef = useRef(null);
   const cameraVideoRef = useRef(null);
   const cameraCanvasRef = useRef(null);
   const [cameraStream, setCameraStream] = useState(null);
@@ -90,11 +84,7 @@ export default function Dashboard() {
   const [diagnoseResult, setDiagnoseResult] = useState(null);
   const [diagnoseLoading, setDiagnoseLoading] = useState(false);
   const [diagnoseError, setDiagnoseError] = useState(null);
-  const [ocrText, setOcrText] = useState("Processing image...");
-  const [showUploadOptions, setShowUploadOptions] = useState(true);
-  const [showCameraSection, setShowCameraSection] = useState(false);
-  const [showImagePreviewSection, setShowImagePreviewSection] = useState(false);
-  const [showImageResponseSection, setShowImageResponseSection] = useState(false);
+
   function openImageModal() {
     setImageOpen(true);
     resetImageUpload();
@@ -141,42 +131,20 @@ export default function Dashboard() {
   //     alert("Unable to access camera.");
   //   }
   // }
-async function openCamera() {
-  try {
-    // show the camera UI first so <video> is mounted
-    setShowCameraSection(true);
-    setShowUploadOptions(false);
-
-    // wait for React to render <video>, then request camera
-    setTimeout(async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        if (cameraVideoRef.current) {
-          cameraVideoRef.current.srcObject = stream;
-          setCameraStream(stream);
-        } else {
-          console.error("cameraVideoRef not ready yet");
-        }
-      } catch (err) {
-        console.error("Error accessing camera:", err);
-        alert("Unable to access camera. Please check permissions or try file upload.");
+  async function openCamera() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      if (cameraVideoRef.current) {
+        cameraVideoRef.current.srcObject = stream;
+        setCameraStream(stream);
       }
-    }, 100); // small delay (100ms) ensures <video> exists
-  } catch (err) {
-    console.error("Unexpected error in openCamera:", err);
-  }
-}
-
-  function closeCameraSection() {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach((t) => t.stop());
-      setCameraStream(null);
+    } catch (err) {
+      console.error("Error accessing camera:", err);
+      alert("Unable to access camera. Please check permissions or try file upload.");
     }
-    setShowCameraSection(false);
-    setShowUploadOptions(true);
   }
 
-    function captureImage() {
+  function captureImage() {
     const video = cameraVideoRef.current;
     const canvas = cameraCanvasRef.current;
     if (!video || !canvas) return;
@@ -223,9 +191,6 @@ async function openCamera() {
   // =====================================================
   // CHAT
   // =====================================================
-  function openChatModal() {
-    setChatOpen(true);
-  }
   function closeChatModal() {
     setChatOpen(false);
   }
@@ -448,10 +413,9 @@ function generateFarmingResponse(query) {
     setCropCalendarOpen(false);
   }
 
-  function updateCropCalendar(cropKey = selectedCropKey, season = selectedSeason, region = selectedRegion) {
+  function updateCropCalendar(cropKey = selectedCropKey, season = selectedSeason) {
     const data = cropData[cropKey];
     if (!data) return;
-    const seasonName = season.charAt(0).toUpperCase() + season.slice(1);
     // timeline
     const timelineArr = data.timeline?.[season] || data.timeline?.kharif || [];
     setTimelineHtml(
@@ -524,7 +488,6 @@ function generateFarmingResponse(query) {
     { crop: "Cotton", price: "₹45,000", change: "+1%", min: "₹43,000", max: "₹46,000", volume: "60 kg" },
     { crop: "Chili", price: "₹9,000", change: "+2%", min: "₹8,500", max: "₹9,200", volume: "70 kg" },
     { crop: "Maize", price: "₹2,100", change: "0%", min: "₹2,000", max: "₹2,300", volume: "600 qt" },
-    // ... more rows to paginate
   ];
 
   function updateMarketTable() {
@@ -533,7 +496,7 @@ function generateFarmingResponse(query) {
     setPriceTableBodyHtml(
       page
         .map(
-          (r, i) =>
+          (r) =>
             `<tr>
               <td>${r.crop}</td>
               <td>${r.price}</td>
@@ -541,7 +504,7 @@ function generateFarmingResponse(query) {
               <td>${r.min}</td>
               <td>${r.max}</td>
               <td>${r.volume}</td>
-              <td><button class="btn" onclick="alert('View ${r.crop}')">View</button></td>
+              <td><button class="btn">View</button></td>
             </tr>`
         )
         .join("")
@@ -675,7 +638,9 @@ function generateFarmingResponse(query) {
                 and get instant advice from our smart AI assistant
               </p>
             </div>
-            <div className="wavy-image"></div>
+            <div className="wavy-image-wrap">
+              <img src={farmerAiHero} alt="AI Farming Assistant" className="wavy-hero-img" />
+            </div>
           </div>
         </div>
       </section>
