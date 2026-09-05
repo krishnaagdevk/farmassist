@@ -1,0 +1,282 @@
+:root {
+  --primary-color: #8bc34a;
+  --text-color: #333;
+  --background-color: #f4f4f4;
+  --card-bg-color: #fff;
+  --border-radius: 10px;
+  --transition-speed: 0.6s;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  background-color: var(--background-color);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Corrected Navbar CSS */
+.navbar {
+  display: flex;
+  align-items: center;
+  padding: 15px 50px;
+  background-color: var(--card-bg-color);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  /* Aligns logo to the left */
+  justify-content: flex-start;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+}
+
+.logo img {
+  height: 70px;
+  margin-right: 10px;
+}
+
+.navbar nav {
+  /* Pushes nav links to the far right */
+  margin-left: auto;
+}
+
+.navbar nav a {
+  text-decoration: none;
+  color: var(--text-color);
+  margin: 0 15px;
+  font-weight: 550;
+  font-size: 20px;
+  color: #199c12;
+}
+
+.nav-login-btn {
+  padding: 10px 20px;
+  background-color: var(--primary-color);
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 600;
+  /* Pushes login button to the far right of nav links */
+  margin-left: 20px;
+}
+
+/* Added proper styling for message box */
+.message-box-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.message-box-content {
+  background-color: white;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  position: relative;
+  max-width: 400px;
+  width: 90%;
+}
+
+.message-box-content p {
+  margin: 0;
+  font-size: 16px;
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 24px;
+  cursor: pointer;
+  color: #999;
+  font-weight: bold;
+}
+
+.close-btn:hover {
+  color: #333;
+}
+
+/* The rest of the CSS for the main container remains unchanged */
+.main-container {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 200px auto;
+  width: 90%;
+  max-width: 1000px;
+  background-color: var(--card-bg-color);
+  border-radius: var(--border-radius);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform var(--transition-speed);
+}
+
+.left-panel,
+.right-panel {
+  width: 50%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  padding: 50px;
+  transition: transform var(--transition-speed), opacity var(--transition-speed);
+}
+
+.left-panel {
+  order: 1;
+}
+
+.right-panel {
+  order: 2;
+}
+
+.main-container.signup-mode .left-panel {
+  order: 2;
+}
+
+.main-container.signup-mode .right-panel {
+  order: 1;
+}
+
+.form-box {
+  width: 100%;
+  text-align: left;
+  display: none;
+  transition: opacity var(--transition-speed);
+}
+
+.form-box.active {
+  display: block;
+}
+
+.form-box h2 {
+  font-size: 2.5rem;
+  color: var(--primary-color);
+  margin-bottom: 5px;
+}
+
+.form-box p {
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.input-group {
+  margin-bottom: 15px;
+}
+
+.input-group label {
+  display: block;
+  font-weight: bold;
+  color: #555;
+  margin-bottom: 5px;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  box-sizing: border-box;
+}
+
+.password-wrapper {
+  position: relative;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #aaa;
+  cursor: pointer;
+}
+
+.captcha-group {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.captcha-group input {
+  margin-right: 10px;
+}
+
+.forgot-link {
+  display: block;
+  color: var(--primary-color);
+  text-decoration: none;
+  font-size: 0.9em;
+  text-align: right;
+  margin-bottom: 20px;
+}
+
+.form-box button {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+.signup-btn,
+.login-btn,
+.send-otp-btn {
+  background-color: var(--primary-color);
+  color: #fff;
+  border: none;
+}
+
+.image-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (max-width: 768px) {
+  .main-container {
+    flex-direction: column;
+    width: 100%;
+    margin: 20px 0;
+    box-shadow: none;
+  }
+
+  .left-panel,
+  .right-panel {
+    width: 100%;
+    padding: 20px;
+  }
+
+  .right-panel {
+    display: none;
+  }
+
+  .main-container.signup-mode .left-panel {
+    order: 1;
+  }
+}
+
+

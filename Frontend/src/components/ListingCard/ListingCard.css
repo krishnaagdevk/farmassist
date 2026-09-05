@@ -1,0 +1,228 @@
+.listing-card {
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--slate-200);
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.listing-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+}
+
+.card-link {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.card-media {
+  position: relative;
+  width: 100%;
+  height: 170px;
+  background: var(--slate-100);
+}
+
+.card-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.grade-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm);
+  backdrop-filter: blur(4px);
+}
+
+.organic-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: var(--primary-600);
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-full);
+}
+
+.distance-badge {
+  position: absolute;
+  bottom: 8px;
+  left: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--slate-800);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.card-body {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.crop-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--slate-900);
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.hi-name {
+  font-size: 0.85rem;
+  color: var(--slate-500);
+  font-weight: 400;
+}
+
+.variety-text {
+  font-size: 0.75rem;
+  color: var(--slate-500);
+}
+
+.farmer-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--slate-50);
+  border-radius: var(--radius-md);
+}
+
+.farmer-avatar {
+  font-size: 1.25rem;
+}
+
+.farmer-meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.farmer-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--slate-800);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.kyc-icon {
+  color: var(--primary-600);
+}
+
+.farmer-village {
+  font-size: 0.7rem;
+  color: var(--slate-500);
+}
+
+.pricing-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.25rem;
+}
+
+.current-price {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--primary-700);
+}
+
+.unit-label {
+  font-size: 0.8rem;
+  color: var(--slate-500);
+  margin-left: 0.15rem;
+}
+
+.savings-tag {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-full);
+}
+
+.stock-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stock-text {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--slate-600);
+  font-weight: 500;
+}
+
+.stock-bar-bg {
+  width: 100%;
+  height: 6px;
+  background: var(--slate-200);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.stock-bar-fill {
+  height: 100%;
+  background: var(--primary-500);
+  border-radius: 99px;
+}
+
+.card-footer {
+  padding: 0.75rem 1rem 1rem;
+}
+
+.add-cart-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--primary-600);
+  color: #ffffff;
+  padding: 0.65rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: background 0.2s ease;
+}
+
+.add-cart-btn:hover {
+  background: var(--primary-700);
+}

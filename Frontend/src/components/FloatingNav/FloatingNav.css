@@ -1,0 +1,231 @@
+/* =====================================================
+   FLOATING ACTION BALL & QUICK MENU
+   AgriDirect Theme Matching (Green / Organic Vibrant Gradients)
+   ===================================================== */
+
+.floating-nav-container {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+/* ── Menu Items Container ─────────────────────────── */
+.floating-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+  opacity: 0;
+  transform: translateY(20px) scale(0.9);
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.floating-menu.open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+/* ── Individual Menu Action Pill ───────────────────── */
+.floating-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px 10px 14px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 50px;
+  box-shadow: 0 8px 24px -4px rgba(22, 101, 52, 0.18),
+              0 2px 6px 0 rgba(0, 0, 0, 0.06);
+  border: 1.5px solid rgba(187, 247, 208, 0.8);
+  text-decoration: none;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  min-width: 170px;
+}
+
+.floating-menu-item:hover {
+  transform: translateX(-6px) scale(1.03);
+  background: #ffffff;
+  border-color: var(--primary-500, #22c55e);
+  box-shadow: 0 12px 28px -2px rgba(22, 101, 52, 0.25);
+}
+
+.floating-menu-item.active {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-color: var(--primary-600, #16a34a);
+}
+
+.floating-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #22c55e, #15803d);
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(34, 197, 94, 0.35);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.floating-menu-item:hover .floating-item-icon {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.market-item .floating-item-icon {
+  background: linear-gradient(135deg, #10b981, #047857);
+}
+
+.advisory-item .floating-item-icon {
+  background: linear-gradient(135deg, #22c55e, #15803d);
+}
+
+.floating-item-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.floating-item-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #14532d;
+  line-height: 1.2;
+}
+
+.floating-item-sub {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #4b7a5a;
+}
+
+/* ── Main Floating Ball Trigger ────────────────────── */
+.floating-ball-trigger {
+  position: relative;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, #4ade80 0%, #16a34a 50%, #14532d 100%);
+  color: white;
+  cursor: pointer;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(22, 163, 74, 0.4),
+              0 0 0 3px rgba(255, 255, 255, 0.85);
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  outline: none;
+  user-select: none;
+}
+
+.floating-ball-trigger:hover {
+  transform: scale(1.1) translateY(-2px);
+  box-shadow: 0 12px 30px rgba(22, 163, 74, 0.55),
+              0 0 0 4px rgba(255, 255, 255, 0.95);
+}
+
+.floating-ball-trigger:active {
+  transform: scale(0.95);
+}
+
+.floating-ball-trigger.active {
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4),
+              0 0 0 3px rgba(255, 255, 255, 0.85);
+  transform: rotate(90deg);
+}
+
+/* ── Ambient Pulsing Glow ──────────────────────────── */
+.ball-glow {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(74, 222, 128, 0.6) 0%, rgba(22, 163, 74, 0) 70%);
+  z-index: -1;
+  animation: pulseGlow 2.5s infinite ease-in-out;
+}
+
+.floating-ball-trigger.active .ball-glow {
+  display: none;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.25);
+    opacity: 0.2;
+  }
+}
+
+.ball-inner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ball-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sprout-icon {
+  font-size: 1.65rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.sparkle-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  color: #fef08a;
+  filter: drop-shadow(0 0 4px #eab308);
+  animation: spinSparkle 4s linear infinite;
+}
+
+@keyframes spinSparkle {
+  0% { transform: rotate(0deg) scale(0.9); }
+  50% { transform: rotate(180deg) scale(1.15); }
+  100% { transform: rotate(360deg) scale(0.9); }
+}
+
+.close-icon {
+  color: white;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.7); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ── Responsive adjustments ────────────────────────── */
+@media (max-width: 640px) {
+  .floating-nav-container {
+    bottom: 20px;
+    right: 20px;
+  }
+  .floating-ball-trigger {
+    width: 56px;
+    height: 56px;
+  }
+  .sprout-icon {
+    font-size: 1.45rem;
+  }
+}

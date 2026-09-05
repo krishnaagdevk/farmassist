@@ -1,0 +1,306 @@
+{
+  "rice": {
+    "name": "Rice (धान)",
+    "type": "Cereal",
+    "duration": "120-150 days",
+    "seasons": ["kharif", "rabi"],
+    "regions": ["all"],
+    "overview": {
+      "description": "Rice is the staple food crop of India, grown in diverse agro-climatic conditions.",
+      "varieties": ["Basmati", "Non-Basmati", "Aromatic", "Fine grain", "Medium grain", "Coarse grain"],
+      "soilType": "Clay loam, silty clay loam with pH 5.5-7.0",
+      "climate": "Tropical and subtropical with 20-35°C temperature",
+      "rainfall": "1000-2000mm annually"
+    },
+    "cultivation": {
+      "landPrep": "Deep plowing, puddling, leveling for water retention",
+      "seedRate": "20-25 kg/hectare for transplanting, 60-80 kg/hectare for direct seeding",
+      "spacing": "20cm x 15cm for transplanting",
+      "fertilizer": "120:60:40 NPK kg/hectare",
+      "irrigation": "Continuous flooding during vegetative stage, intermittent during reproductive stage"
+    },
+    "timeline": {
+      "kharif": [
+        {
+          "stage": "Land Preparation",
+          "period": "May-June",
+          "icon": "🚜",
+          "details": "Deep plowing, puddling, leveling. Apply FYM 10-12 tons/hectare."
+        },
+        {
+          "stage": "Nursery Preparation",
+          "period": "June",
+          "icon": "🌱",
+          "details": "Prepare nursery beds, sow seeds. Maintain 2-3cm water level."
+        },
+        {
+          "stage": "Transplanting",
+          "period": "July",
+          "icon": "🌾",
+          "details": "Transplant 25-30 day old seedlings. Maintain proper spacing."
+        },
+        {
+          "stage": "Vegetative Growth",
+          "period": "July-August",
+          "icon": "🌿",
+          "details": "Apply nitrogen fertilizer. Maintain water level 2-5cm."
+        },
+        {
+          "stage": "Reproductive Phase",
+          "period": "September",
+          "icon": "🌸",
+          "details": "Panicle initiation. Apply potash fertilizer. Control pests."
+        },
+        {
+          "stage": "Grain Filling",
+          "period": "October",
+          "icon": "🌾",
+          "details": "Intermittent irrigation. Monitor for diseases."
+        },
+        {
+          "stage": "Maturity & Harvest",
+          "period": "November",
+          "icon": "🚛",
+          "details": "Harvest when 80% grains turn golden. Proper drying essential."
+        }
+      ],
+      "rabi": [
+        {
+          "stage": "Land Preparation",
+          "period": "October-November",
+          "icon": "🚜",
+          "details": "Prepare fields after kharif harvest. Level properly."
+        },
+        {
+          "stage": "Sowing",
+          "period": "November-December",
+          "icon": "🌱",
+          "details": "Direct seeding or transplanting. Use short duration varieties."
+        },
+        {
+          "stage": "Vegetative Growth",
+          "period": "December-January",
+          "icon": "🌿",
+          "details": "Regular irrigation. Apply nitrogen in splits."
+        },
+        {
+          "stage": "Reproductive Phase",
+          "period": "February",
+          "icon": "🌸",
+          "details": "Flowering stage. Ensure adequate water supply."
+        },
+        {
+          "stage": "Grain Filling",
+          "period": "March",
+          "icon": "🌾",
+          "details": "Grain development. Reduce irrigation frequency."
+        },
+        {
+          "stage": "Harvest",
+          "period": "April",
+          "icon": "🚛",
+          "details": "Harvest before summer heat. Proper storage important."
+        }
+      ]
+    },
+    "diseases": [
+      {
+        "name": "Rust (Yellow, Brown, Black)",
+        "symptoms": "Rust colored pustules",
+        "control": "Resistant varieties, fungicide spray"
+      },
+      {
+        "name": "Powdery Mildew",
+        "symptoms": "White powdery growth",
+        "control": "Sulfur dusting, systemic fungicides"
+      }
+    ],
+    "pests": [
+      {
+        "name": "Aphids",
+        "symptoms": "Yellowing, stunted growth",
+        "control": "Insecticidal soap, predatory insects"
+      }
+    ],
+    "market": {
+      "msp": "₹2,275/quintal (2024-25)",
+      "avgPrice": "₹2,400-2,800/quintal",
+      "demand": "High domestic demand",
+      "storage": "Moisture content below 12%, pest-free storage"
+    }
+  },
+  "tomato": {
+    "name": "Tomato (टमाटर)",
+    "type": "Vegetable",
+    "duration": "90-120 days",
+    "seasons": ["kharif", "rabi", "zaid"],
+    "regions": ["all"],
+    "overview": {
+      "description": "Tomato is one of the most important vegetable crops grown worldwide.",
+      "varieties": ["Determinate", "Indeterminate", "Cherry", "Hybrid"],
+      "soilType": "Well-drained sandy loam with pH 6.0-7.0",
+      "climate": "Warm season crop, temperature 20-25°C optimal",
+      "rainfall": "600-750mm annually"
+    },
+    "cultivation": {
+      "landPrep": "Deep plowing, raised beds for drainage",
+      "seedRate": "300-400g/hectare",
+      "spacing": "60cm x 45cm",
+      "fertilizer": "120:80:50 NPK kg/hectare",
+      "irrigation": "Drip irrigation preferred, avoid water stress"
+    },
+    "timeline": {
+      "rabi": [
+        {
+          "stage": "Nursery Preparation",
+          "period": "September",
+          "icon": "🌱",
+          "details": "Prepare nursery beds, sow seeds in pro-trays."
+        },
+        {
+          "stage": "Land Preparation",
+          "period": "October",
+          "icon": "🚜",
+          "details": "Prepare raised beds, install drip irrigation."
+        },
+        {
+          "stage": "Transplanting",
+          "period": "October-November",
+          "icon": "🌿",
+          "details": "Transplant 4-5 week old seedlings."
+        },
+        {
+          "stage": "Vegetative Growth",
+          "period": "November-December",
+          "icon": "🌿",
+          "details": "Regular irrigation, apply nitrogen fertilizer."
+        },
+        {
+          "stage": "Flowering",
+          "period": "December-January",
+          "icon": "🌸",
+          "details": "Support plants with stakes. Apply phosphorus."
+        },
+        {
+          "stage": "Fruit Development",
+          "period": "January-February",
+          "icon": "🍅",
+          "details": "Regular harvesting begins. Apply potash."
+        },
+        {
+          "stage": "Peak Harvest",
+          "period": "February-March",
+          "icon": "🚛",
+          "details": "Daily harvesting. Proper post-harvest handling."
+        }
+      ]
+    },
+    "diseases": [
+      {
+        "name": "Early Blight",
+        "symptoms": "Dark spots with concentric rings",
+        "control": "Fungicide spray, crop rotation"
+      }
+    ],
+    "pests": [
+      {
+        "name": "Fruit Borer",
+        "symptoms": "Holes in fruits",
+        "control": "Pheromone traps, Bt spray"
+      }
+    ],
+    "market": {
+      "msp": "Not applicable",
+      "avgPrice": "₹1,500-4,000/quintal (seasonal)",
+      "demand": "High demand year-round",
+      "storage": "Short shelf life"
+    }
+  },
+  "wheat": {
+    "name": "Wheat (गेहूं)",
+    "type": "Cereal",
+    "duration": "120-150 days",
+    "seasons": ["rabi"],
+    "regions": ["north", "central"],
+    "overview": {
+      "description": "Wheat is the second most important cereal crop in India after rice.",
+      "varieties": ["Durum", "Emmer", "Einkorn", "Hard red", "Soft white"],
+      "soilType": "Well-drained loamy soil with pH 6.0-7.5",
+      "climate": "Cool growing season, temperature 15-20°C optimal",
+      "rainfall": "750-1000mm annually"
+    },
+    "cultivation": {
+      "landPrep": "Deep plowing, fine tilth preparation",
+      "seedRate": "100-125 kg/hectare",
+      "spacing": "20-22.5cm row to row",
+      "fertilizer": "120:60:40 NPK kg/hectare",
+      "irrigation": "4-6 irrigations required"
+    },
+    "timeline": {
+      "rabi": [
+        {
+          "stage": "Land Preparation",
+          "period": "October",
+          "icon": "🚜",
+          "details": "Deep plowing and field preparation."
+        },
+        {
+          "stage": "Sowing",
+          "period": "November-December",
+          "icon": "🌱",
+          "details": "Optimal sowing time for maximum yield."
+        },
+        {
+          "stage": "Germination",
+          "period": "December",
+          "icon": "🌿",
+          "details": "Ensure proper moisture for germination."
+        },
+        {
+          "stage": "Tillering",
+          "period": "January",
+          "icon": "🌾",
+          "details": "First irrigation and nitrogen application."
+        },
+        {
+          "stage": "Jointing",
+          "period": "February",
+          "icon": "🌿",
+          "details": "Second irrigation and top dressing."
+        },
+        {
+          "stage": "Flowering",
+          "period": "March",
+          "icon": "🌸",
+          "details": "Critical irrigation stage."
+        },
+        {
+          "stage": "Harvest",
+          "period": "April",
+          "icon": "🚛",
+          "details": "Harvest when grains are hard."
+        }
+      ]
+    },
+    "diseases": [
+      {
+        "name": "Rust (Yellow, Brown, Black)",
+        "symptoms": "Rust colored pustules on leaves",
+        "control": "Resistant varieties, fungicide spray"
+      }
+    ],
+    "pests": [
+      {
+        "name": "Aphids",
+        "symptoms": "Yellowing and stunted growth",
+        "control": "Insecticidal soap, beneficial insects"
+      }
+    ],
+    "market": {
+      "msp": "₹2,425/quintal (2024-25)",
+      "avgPrice": "₹2,500-2,900/quintal",
+      "demand": "High domestic and export demand",
+      "storage": "Moisture content below 12%"
+    }
+  }
+}
