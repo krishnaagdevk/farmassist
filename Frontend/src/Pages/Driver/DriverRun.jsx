@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import api from "../../lib/api";
+import { useAuth } from "../../context/AuthContext";
 import {
   Truck,
   CheckCircle2,
@@ -9,9 +10,13 @@ import {
   Camera,
   Layers,
   ArrowRight,
+  ShieldCheck,
+  CreditCard,
+  QrCode,
 } from "lucide-react";
 
 export default function DriverRun() {
+  const { user } = useAuth();
   const [activeShipment, setActiveShipment] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -104,6 +109,20 @@ export default function DriverRun() {
               <span>Start Delivery Run</span>
             </button>
           )}
+        </div>
+
+        {/* Logistics Pilot Digital ID Badge */}
+        <div className="max-w-3xl mx-auto mt-4 p-3 rounded-xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2.5">
+            <span className="font-mono font-bold px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/40">
+              {user?.digitalId || "DRV-2026-1001"}
+            </span>
+            <span className="text-slate-200 font-semibold">{user?.name || "Vikas Driver"} &middot; Pilot</span>
+          </div>
+          <span className="text-emerald-400 font-semibold flex items-center gap-1">
+            <ShieldCheck size={13} />
+            Active Fleet Carrier
+          </span>
         </div>
       </div>
 

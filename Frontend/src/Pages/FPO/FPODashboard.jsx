@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import api from "../../lib/api";
+import { useAuth } from "../../context/AuthContext";
 import {
   Users,
   Package,
@@ -13,9 +14,15 @@ import {
   ArrowUpRight,
   ShieldCheck,
   Calendar,
+  Building2,
+  CreditCard,
+  QrCode,
+  X,
 } from "lucide-react";
 
 export default function FPODashboard() {
+  const { user } = useAuth();
+  const [showFpoCert, setShowFpoCert] = useState(false);
   const [activeTab, setActiveTab] = useState("overview"); // overview | bulk-upload | pools | members
   const [stats, setStats] = useState(null);
   const [pools, setPools] = useState([]);
@@ -159,6 +166,116 @@ export default function FPODashboard() {
               </p>
             </div>
           </div>
+
+          {/* FPO Digital Certificate Badge */}
+          <div className="mt-6 p-4 rounded-2xl bg-purple-950/60 border border-purple-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-purple-300 flex-shrink-0">
+                <Building2 size={24} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-purple-400/20 text-purple-200 border border-purple-400/40">
+                    {user?.digitalId || "FPO-2026-1001"}
+                  </span>
+                  <span className="text-xs text-purple-300 font-semibold flex items-center gap-1">
+                    <ShieldCheck size={13} />
+                    Verified Cooperative Aggregation Hub
+                  </span>
+                </div>
+                <h3 className="text-base font-bold text-white mt-0.5">
+                  {user?.orgName || user?.name || "Ghaziabad Kisan Samriddhi FPO Federation"}
+                </h3>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-purple-500 hover:bg-purple-600 text-white font-bold text-xs shadow-md transition-all flex-shrink-0"
+              onClick={() => setShowFpoCert(true)}
+            >
+              <QrCode size={15} />
+              <span>View FPO Certificate</span>
+            </button>
+          </div>
+
+          {/* FPO Certificate Modal */}
+          {showFpoCert && (
+            <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in-95 text-slate-900">
+                <button
+                  className="absolute top-4 right-4 p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
+                  onClick={() => setShowFpoCert(false)}
+                >
+                  <X size={18} />
+                </button>
+
+                <div className="bg-gradient-to-r from-purple-900 to-indigo-800 p-6 text-white text-center relative">
+                  <div className="text-[10px] font-bold tracking-widest uppercase opacity-80 mb-1">
+                    SFAC / NABARD Registered Producer Entity
+                  </div>
+                  <h3 className="text-xl font-extrabold tracking-tight">FPO Federation Certificate</h3>
+                  <p className="text-xs text-purple-200 mt-0.5 font-medium">Collective Agricultural Aggregation Hub</p>
+                </div>
+
+                <div className="p-6 space-y-4">
+                  <div className="flex items-center justify-between p-3 rounded-2xl bg-purple-50 border border-purple-200">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase text-purple-800 tracking-wider block">
+                        FPO Federation ID
+                      </span>
+                      <strong className="text-lg font-mono font-black text-purple-950">
+                        {user?.digitalId || "FPO-2026-1001"}
+                      </strong>
+                    </div>
+                    <div className="px-2.5 py-1 rounded-full bg-purple-600 text-white text-[11px] font-bold flex items-center gap-1">
+                      <ShieldCheck size={12} />
+                      <span>Govt. Verified</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 col-span-2">
+                      <span className="text-slate-500 font-medium block">Federation Legal Name</span>
+                      <strong className="text-slate-900 font-bold text-sm block">
+                        {user?.orgName || user?.name || "Ghaziabad Kisan Samriddhi FPO Federation"}
+                      </strong>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                      <span className="text-slate-500 font-medium block">Registered Region</span>
+                      <strong className="text-slate-900 font-bold block">{user?.address?.district || "Ghaziabad, UP"}</strong>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                      <span className="text-slate-500 font-medium block">Active Members</span>
+                      <strong className="text-slate-900 font-bold block">{stats?.memberCount || 38} Farmers</strong>
+                    </div>
+                  </div>
+
+                  {/* QR Code Verification Section */}
+                  <div className="p-4 rounded-2xl bg-slate-900 text-white text-center flex flex-col items-center justify-center gap-2">
+                    <div className="w-24 h-24 bg-white rounded-xl p-2 flex items-center justify-center">
+                      <div className="w-full h-full border-2 border-dashed border-slate-900 flex items-center justify-center text-slate-900 font-mono text-[10px] font-bold text-center leading-tight">
+                        [QR CODE]<br />{user?.digitalId || "FPO-2026"}
+                      </div>
+                    </div>
+                    <span className="text-[11px] text-slate-300 font-medium">
+                      Scan to verify FPO authenticity & member farmer lot traceability
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-slate-50 border-t border-slate-200 text-center">
+                  <button
+                    type="button"
+                    className="w-full py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition"
+                    onClick={() => setShowFpoCert(false)}
+                  >
+                    Close Certificate
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Navigation Tabs */}
           <div className="mt-8 flex flex-wrap gap-2 border-b border-purple-700/50 pb-2">

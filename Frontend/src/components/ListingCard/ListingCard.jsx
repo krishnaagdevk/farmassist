@@ -81,6 +81,11 @@ export default function ListingCard({ listing }) {
                 {listing.farmer?.kycStatus === "verified" && (
                   <ShieldCheck size={14} className="text-emerald-600 shrink-0" title="KYC Verified" />
                 )}
+                {listing.farmer?.digitalId && (
+                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0 font-medium">
+                    {listing.farmer.digitalId}
+                  </span>
+                )}
               </div>
               <span className="text-[11px] text-slate-500 truncate block">
                 {listing.farmer?.village ? `${listing.farmer.village}, ` : ""}

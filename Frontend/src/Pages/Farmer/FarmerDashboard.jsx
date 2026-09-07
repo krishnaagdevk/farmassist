@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import api from "../../lib/api";
+import { useAuth } from "../../context/AuthContext";
 import {
   Sparkles,
   TrendingUp,
@@ -12,6 +13,10 @@ import {
   CheckCircle2,
   AlertCircle,
   ChevronRight,
+  ShieldCheck,
+  CreditCard,
+  QrCode,
+  X,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -25,6 +30,8 @@ import {
 } from "recharts";
 
 export default function FarmerDashboard() {
+  const { user } = useAuth();
+  const [showIdModal, setShowIdModal] = useState(false);
   const [myListings, setMyListings] = useState([]);
   const [stats, setStats] = useState(null);
   const [crops, setCrops] = useState([]);
@@ -197,6 +204,123 @@ export default function FarmerDashboard() {
           </button>
         </div>
       </div>
+
+      {/* Kisan Digital Identity Smart Card Banner */}
+      <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-teal-950 text-white rounded-3xl p-5 sm:p-6 shadow-md border border-emerald-500/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-400 flex-shrink-0">
+            <CreditCard size={28} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/30 text-emerald-300 border border-emerald-400/50">
+                {user?.digitalId || "KISAN-2026-1001"}
+              </span>
+              <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-400/10 text-emerald-300">
+                <ShieldCheck size={13} />
+                <span>AgriStack Verified Producer</span>
+              </span>
+            </div>
+            <h2 className="text-lg font-bold text-white mt-1">
+              {user?.name || "Rameshwar Singh"} &middot; <span className="text-emerald-300 font-normal text-sm">{user?.address?.district || "Ghaziabad"}, {user?.address?.state || "Uttar Pradesh"}</span>
+            </h2>
+            <p className="text-xs text-slate-300 mt-0.5">
+              Official Producer Smart ID for direct farm-to-door delivery, B2B procurement lot matching, and instant escrow payouts.
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs shadow-md transition-all flex-shrink-0"
+          onClick={() => setShowIdModal(true)}
+        >
+          <QrCode size={16} />
+          <span>View Kisan Digital ID</span>
+        </button>
+      </div>
+
+      {/* Kisan Digital ID Card Modal */}
+      {showIdModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in-95">
+            <button
+              className="absolute top-4 right-4 p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
+              onClick={() => setShowIdModal(false)}
+            >
+              <X size={18} />
+            </button>
+
+            {/* Top Emblem Bar */}
+            <div className="bg-gradient-to-r from-emerald-800 to-teal-700 p-6 text-white text-center relative">
+              <div className="text-[10px] font-bold tracking-widest uppercase opacity-80 mb-1">
+                AgriDirect National Digital Agriculture Mission
+              </div>
+              <h3 className="text-xl font-extrabold tracking-tight">Kisan Digital Smart Card</h3>
+              <p className="text-xs text-emerald-200 mt-0.5 font-medium">Govt. of India &middot; AgriStack Compliant</p>
+            </div>
+
+            {/* Card Body */}
+            <div className="p-6 space-y-4">
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-50 border border-emerald-200">
+                <div>
+                  <span className="text-[10px] font-bold uppercase text-emerald-800 tracking-wider block">
+                    Unique Kisan ID
+                  </span>
+                  <strong className="text-lg font-mono font-black text-emerald-950">
+                    {user?.digitalId || "KISAN-2026-1001"}
+                  </strong>
+                </div>
+                <div className="px-2.5 py-1 rounded-full bg-emerald-600 text-white text-[11px] font-bold flex items-center gap-1">
+                  <ShieldCheck size={12} />
+                  <span>KYC Verified</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-slate-500 font-medium block">Producer Name</span>
+                  <strong className="text-slate-900 font-bold text-sm block truncate">{user?.name || "Rameshwar Singh"}</strong>
+                </div>
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-slate-500 font-medium block">Cluster District</span>
+                  <strong className="text-slate-900 font-bold text-sm block truncate">{user?.address?.district || "Ghaziabad"}</strong>
+                </div>
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-slate-500 font-medium block">Phone / Contact</span>
+                  <strong className="text-slate-900 font-bold block">{user?.phone || "+91 98765 43210"}</strong>
+                </div>
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-slate-500 font-medium block">Valid Through</span>
+                  <strong className="text-slate-900 font-bold block">December 2029</strong>
+                </div>
+              </div>
+
+              {/* QR Code Verification Section */}
+              <div className="p-4 rounded-2xl bg-slate-900 text-white text-center flex flex-col items-center justify-center gap-2">
+                <div className="w-24 h-24 bg-white rounded-xl p-2 flex items-center justify-center">
+                  <div className="w-full h-full border-2 border-dashed border-slate-900 flex items-center justify-center text-slate-900 font-mono text-[10px] font-bold text-center leading-tight">
+                    [QR CODE]<br />{user?.digitalId || "KISAN-2026"}
+                  </div>
+                </div>
+                <span className="text-[11px] text-slate-300 font-medium">
+                  Scan at Mandi Hub / Driver Dispatch for instant farm lot validation
+                </span>
+              </div>
+            </div>
+
+            <div className="p-4 bg-slate-50 border-t border-slate-200 text-center">
+              <button
+                type="button"
+                className="w-full py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition"
+                onClick={() => setShowIdModal(false)}
+              >
+                Close ID Card
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 4 Core Summary Metric Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">

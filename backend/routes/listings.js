@@ -171,6 +171,7 @@ router.get("/", async (req, res) => {
               farmer: {
                 _id: "$farmerInfo._id",
                 name: "$farmerInfo.name",
+                digitalId: "$farmerInfo.digitalId",
                 village: "$farmerInfo.address.village",
                 district: "$farmerInfo.address.district",
                 ratingAvg: "$farmerInfo.ratingAvg",

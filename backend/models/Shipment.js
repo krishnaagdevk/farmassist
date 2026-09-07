@@ -39,6 +39,11 @@ const shipmentSchema = new mongoose.Schema(
       default: "planned",
       index: true,
     },
+    currentLocation: {
+      type: { type: String, enum: ["Point"], default: "Point" },
+      coordinates: { type: [Number], default: undefined }, // [lng, lat]
+      updatedAt: Date,
+    },
     optimizerMeta: { type: mongoose.Schema.Types.Mixed, default: {} },
   },
   { timestamps: true }

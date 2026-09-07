@@ -107,6 +107,7 @@ async function seed() {
     email: "admin@agridirect.in",
     password: passwordHash,
     role: "admin",
+    digitalId: "ADM-2026-0001",
     phone: "9876543210",
   });
 
@@ -115,6 +116,7 @@ async function seed() {
     email: "fpo@agridirect.in",
     password: passwordHash,
     role: "fpo",
+    digitalId: "FPO-2026-1001",
     orgName: "Ghaziabad Farmers Producer Co. Ltd.",
     phone: "9876543211",
     location: { type: "Point", coordinates: [77.4538, 28.6692] },
@@ -124,24 +126,28 @@ async function seed() {
     {
       name: "Rameshwar Singh",
       email: "farmer1@agridirect.in",
+      digitalId: "KISAN-2026-1001",
       village: "Muradnagar",
       coordinates: [77.502, 28.775],
     },
     {
       name: "Suresh Pal",
       email: "farmer2@agridirect.in",
+      digitalId: "KISAN-2026-1002",
       village: "Modinagar",
       coordinates: [77.581, 28.831],
     },
     {
       name: "Karanjit Yadav",
       email: "farmer3@agridirect.in",
+      digitalId: "KISAN-2026-1003",
       village: "Pilkhuwa",
       coordinates: [77.654, 28.712],
     },
     {
       name: "Balwinder Kaur",
       email: "farmer4@agridirect.in",
+      digitalId: "KISAN-2026-1004",
       village: "Loni",
       coordinates: [77.289, 28.752],
     },
@@ -154,6 +160,7 @@ async function seed() {
       email: f.email,
       password: passwordHash,
       role: "farmer",
+      digitalId: f.digitalId,
       kycStatus: "verified",
       address: { village: f.village, district: "Ghaziabad", state: "Uttar Pradesh" },
       location: { type: "Point", coordinates: f.coordinates },
@@ -166,6 +173,7 @@ async function seed() {
     email: "driver@agridirect.in",
     password: passwordHash,
     role: "driver",
+    digitalId: "DRV-2026-1001",
     phone: "9876543220",
   });
 
@@ -174,6 +182,8 @@ async function seed() {
     email: "buyer@agridirect.in",
     password: passwordHash,
     role: "buyer",
+    buyerType: "consumer",
+    digitalId: "CON-2026-1001",
     phone: "9876543230",
     address: { line1: "Tower 4, Sector 62", district: "Noida", pincode: "201301" },
     location: { type: "Point", coordinates: [77.3649, 28.628] },

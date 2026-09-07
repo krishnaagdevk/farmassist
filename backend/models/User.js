@@ -26,6 +26,12 @@ const userSchema = new mongoose.Schema(
       state: String,
       pincode: String,
     },
+    digitalId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
+    },
     kycStatus: {
       type: String,
       enum: ["none", "pending", "verified"],
@@ -41,6 +47,22 @@ const userSchema = new mongoose.Schema(
 userSchema.index({ location: "2dsphere" }, { sparse: true });
 
 userSchema.pre("save", async function (next) {
+  // Auto-generate standardized digital identity code if not already set
+  if (!this.digitalId) {
+    const year = new Date().getFullYear();
+    const rand = Math.floor(1000 + Math.random() * 9000);
+    const prefixMap = {
+      farmer: "KISAN",
+      fpo: "FPO",
+      buyer: this.buyerType === "bulk" ? "BULK" : "CON",
+      driver: "DRV",
+      officer: "OFF",
+      admin: "ADM",
+    };
+    const prefix = prefixMap[this.role] || "USR";
+    this.digitalId = `${prefix}-${year}-${rand}`;
+  }
+
   if (!this.isModified("password")) return next();
   try {
     const salt = await bcrypt.genSalt(10);

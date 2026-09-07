@@ -4,7 +4,7 @@ import api from "../../lib/api";
 import { useAuth } from "../../context/AuthContext";
 import "./LoginModal.css";
 
-export default function LoginModal({ mode = "login", onClose }) {
+export default function LoginModal({ mode = "login", initialRole = "farmer", onClose }) {
   const [currentMode, setCurrentMode] = useState(mode);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -15,7 +15,8 @@ export default function LoginModal({ mode = "login", onClose }) {
     phone: "",
     email: "",
     password: "",
-    role: "farmer",
+    role: initialRole === "bulk" ? "buyer" : initialRole || "farmer",
+    buyerType: initialRole === "bulk" ? "bulk" : "consumer",
     otp: "",
   });
 
@@ -98,7 +99,7 @@ export default function LoginModal({ mode = "login", onClose }) {
         return "/dispatch";
       case "buyer":
       default:
-        return "/market";
+        return userObj?.buyerType === "bulk" ? "/bulk" : "/market";
     }
   };
 

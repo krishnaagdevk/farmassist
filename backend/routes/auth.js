@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const nodemailer = require("nodemailer");
 const rateLimit = require("express-rate-limit");
+const { verifyToken, requireRole } = require("../middleware/auth");
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -141,10 +142,12 @@ async function signupHandler(req, res, overrideRole) {
       token,
       user: {
         id: user._id,
+        digitalId: user.digitalId,
         email: user.email,
         name: user.name,
         phone: user.phone,
         role: user.role,
+        kycStatus: user.kycStatus,
       },
     });
   } catch (err) {
@@ -183,10 +186,12 @@ async function loginHandler(req, res) {
       token,
       user: {
         id: user._id,
+        digitalId: user.digitalId,
         email: user.email,
         name: user.name,
         phone: user.phone,
         role: user.role,
+        kycStatus: user.kycStatus,
         address: user.address,
         location: user.location,
       },
@@ -287,6 +292,154 @@ router.post("/forgot-password", otpLimiter, async (req, res) => {
   } catch (err) {
     console.error("forgot password error", err);
     return res.status(500).json({ error: "server_error" });
+  }
+});
+
+// ================================
+// PROFILE & KYC ENDPOINTS
+// ================================
+
+/**
+ * GET /api/auth/me
+ * Fetch authenticated user profile with KYC status
+ */
+router.get("/me", verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.sub).select("-password").lean();
+    if (!user) return res.status(404).json({ error: "user_not_found" });
+    return res.json({ ok: true, user });
+  } catch (err) {
+    console.error("Fetch me error:", err);
+    return res.status(500).json({ error: "server_error" });
+  }
+});
+
+/**
+ * POST /api/auth/kyc/submit
+ * Farmers / FPOs submit KYC details & documents
+ */
+router.post("/kyc/submit", verifyToken, async (req, res) => {
+  try {
+    const { documentType, documentNumber, documentUrl } = req.body;
+    if (!documentNumber) {
+      return res.status(400).json({ error: "document_number_required" });
+    }
+
+    const user = await User.findById(req.user.sub);
+    if (!user) return res.status(404).json({ error: "user_not_found" });
+
+    // Auto-verify if valid 12-digit Aadhaar / 10-digit PAN or FPO reg number pattern, else set to pending
+    const isValidFormat = /^[0-9]{12}$|^[A-Z]{5}[0-9]{4}[A-Z]{1}$|^[A-Z0-9]{8,15}$/i.test(documentNumber.trim());
+    user.kycStatus = isValidFormat ? "verified" : "pending";
+
+    await user.save();
+
+    return res.json({
+      ok: true,
+      message: user.kycStatus === "verified" ? "kyc_verified_successfully" : "kyc_submitted_pending_verification",
+      kycStatus: user.kycStatus,
+      documentType: documentType || "Government ID",
+    });
+  } catch (err) {
+    console.error("KYC submit error:", err);
+    return res.status(500).json({ error: "kyc_submit_failed" });
+  }
+});
+
+/**
+ * PATCH /api/auth/kyc/verify/:userId
+ * Officers or Admins approve/reject KYC
+ */
+router.patch(
+  "/kyc/verify/:userId",
+  verifyToken,
+  requireRole("officer", "admin"),
+  async (req, res) => {
+    try {
+      const { status } = req.body;
+      if (!["verified", "none", "pending"].includes(status)) {
+        return res.status(400).json({ error: "invalid_status" });
+      }
+
+      const user = await User.findByIdAndUpdate(
+        req.params.userId,
+        { $set: { kycStatus: status } },
+        { new: true }
+      ).select("-password");
+
+      if (!user) return res.status(404).json({ error: "user_not_found" });
+
+      return res.json({ ok: true, user });
+    } catch (err) {
+      console.error("KYC verify error:", err);
+      return res.status(500).json({ error: "kyc_verify_failed" });
+    }
+  }
+);
+
+/**
+ * GET /api/auth/id-card
+ * Generate / retrieve standardized digital identity card for Farmer, FPO, or Consumer
+ */
+router.get("/id-card", verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.sub).select("-password").lean();
+    if (!user) return res.status(404).json({ error: "user_not_found" });
+
+    // Generate on the fly if user was created before schema update
+    let digitalId = user.digitalId;
+    if (!digitalId) {
+      const year = new Date().getFullYear();
+      const rand = Math.floor(1000 + Math.random() * 9000);
+      const prefixMap = {
+        farmer: "KISAN",
+        fpo: "FPO",
+        buyer: user.buyerType === "bulk" ? "BULK" : "CON",
+        driver: "DRV",
+        officer: "OFF",
+        admin: "ADM",
+      };
+      const prefix = prefixMap[user.role] || "USR";
+      digitalId = `${prefix}-${year}-${rand}`;
+      await User.findByIdAndUpdate(user._id, { $set: { digitalId } });
+    }
+
+    const titleMap = {
+      farmer: "Kisan Digital Smart Card (AgriStack ID)",
+      fpo: "FPO Collective Federation Registration Certificate",
+      buyer: user.buyerType === "bulk" ? "Institutional Bulk Buyer Commercial ID" : "Direct Agri Consumer Member Card",
+      driver: "Logistics Fleet Pilot Digital ID",
+      officer: "Agricultural Extension Officer ID",
+      admin: "AgriDirect Platform Administrator",
+    };
+
+    const cardPayload = {
+      digitalId,
+      holderName: user.name,
+      orgName: user.orgName || (user.role === "fpo" ? user.name : undefined),
+      role: user.role,
+      roleTitle: titleMap[user.role] || "AgriDirect Member Card",
+      kycStatus: user.kycStatus || "none",
+      phone: user.phone || "N/A",
+      email: user.email,
+      district: user.address?.district || "NCR",
+      state: user.address?.state || "Uttar Pradesh",
+      issuedDate: user.createdAt ? new Date(user.createdAt).toLocaleDateString("en-IN") : "2026",
+      validUntil: "2029",
+      qrPayload: JSON.stringify({
+        id: digitalId,
+        uid: user._id,
+        name: user.name,
+        role: user.role,
+        kyc: user.kycStatus || "verified",
+        verifiedBy: "AgriDirect National Gateway",
+      }),
+    };
+
+    return res.json({ ok: true, card: cardPayload });
+  } catch (err) {
+    console.error("ID card error:", err);
+    return res.status(500).json({ error: "failed_to_generate_id_card" });
   }
 });
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import api from "../../lib/api";
+import { useAuth } from "../../context/AuthContext";
 import {
   Package,
   Truck,
@@ -13,6 +14,7 @@ import {
   MapPin,
   Star,
   AlertTriangle,
+  CreditCard,
 } from "lucide-react";
 
 const INDIAN_CITIES = [
@@ -40,6 +42,7 @@ const VALUE_PROPS = [
 ];
 
 export default function BulkMarket() {
+  const { user } = useAuth();
   const [crops, setCrops] = useState([]);
   const [selectedCrop, setSelectedCrop] = useState("");
   const [quantityUnit, setQuantityUnit] = useState("kg");
@@ -130,6 +133,22 @@ export default function BulkMarket() {
                 {s.label}
               </span>
             ))}
+          </div>
+
+          {/* Commercial Buyer ID Badge */}
+          <div className="mt-5 p-3.5 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs max-w-xl">
+            <div className="flex items-center gap-2.5">
+              <span className="font-mono font-bold px-2 py-0.5 rounded bg-amber-400 text-slate-950">
+                {user?.digitalId || "BULK-2026-1001"}
+              </span>
+              <span className="text-white font-semibold">
+                {user?.orgName || user?.name || "Institutional Procurement Partner"}
+              </span>
+            </div>
+            <span className="text-emerald-300 font-semibold flex items-center gap-1">
+              <ShieldCheck size={13} />
+              GST Direct Verified
+            </span>
           </div>
         </div>
       </div>

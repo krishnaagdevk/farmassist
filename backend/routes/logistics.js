@@ -361,4 +361,86 @@ router.post(
   }
 );
 
+/**
+ * POST /api/logistics/shipments/:id/location
+ * Driver pushes live GPS coordinates
+ */
+router.post(
+  "/shipments/:id/location",
+  verifyToken,
+  requireRole("driver", "admin"),
+  async (req, res) => {
+    try {
+      const { lat, lng } = req.body;
+      if (lat === undefined || lng === undefined) {
+        return res.status(400).json({ error: "lat_and_lng_required" });
+      }
+
+      const shipment = await Shipment.findById(req.params.id);
+      if (!shipment) return res.status(404).json({ error: "shipment_not_found" });
+
+      shipment.currentLocation = {
+        type: "Point",
+        coordinates: [Number(lng), Number(lat)], // GeoJSON [lng, lat]
+        updatedAt: new Date(),
+      };
+
+      if (shipment.status === "planned") {
+        shipment.status = "in_progress";
+      }
+
+      await shipment.save();
+
+      return res.json({
+        ok: true,
+        currentLocation: shipment.currentLocation,
+        status: shipment.status,
+      });
+    } catch (err) {
+      console.error("Location update error:", err);
+      return res.status(500).json({ error: "failed_to_update_location" });
+    }
+  }
+);
+
+/**
+ * GET /api/logistics/shipments/:id/live
+ * Real-time shipment tracking for buyers, farmers, and dispatch dashboard
+ */
+router.get("/shipments/:id/live", async (req, res) => {
+  try {
+    const shipment = await Shipment.findById(req.params.id)
+      .populate("vehicle")
+      .populate("driver", "name phone")
+      .select("code status currentLocation stops plannedDistanceKm plannedDurationMin costPaise updatedAt")
+      .lean();
+
+    if (!shipment) return res.status(404).json({ error: "shipment_not_found" });
+
+    const totalStops = shipment.stops.length;
+    const completedStops = shipment.stops.filter((s) => s.status === "done").length;
+    const nextStop = shipment.stops.find((s) => s.status === "pending") || null;
+
+    return res.json({
+      shipmentId: shipment._id,
+      code: shipment.code,
+      status: shipment.status,
+      currentLocation: shipment.currentLocation || null,
+      progress: {
+        totalStops,
+        completedStops,
+        percentComplete: totalStops > 0 ? Math.round((completedStops / totalStops) * 100) : 0,
+        nextStop: nextStop ? { id: nextStop._id, label: nextStop.label, kind: nextStop.kind } : null,
+      },
+      driver: shipment.driver,
+      vehicle: shipment.vehicle,
+      updatedAt: shipment.updatedAt,
+    });
+  } catch (err) {
+    console.error("Live tracking fetch error:", err);
+    return res.status(500).json({ error: "failed_to_fetch_live_tracking" });
+  }
+});
+
 module.exports = router;
+    
