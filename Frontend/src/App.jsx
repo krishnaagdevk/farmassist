@@ -12,6 +12,7 @@ import Chatbox from "./Pages/Home/Chatbox";
 import Storefront from "./Pages/Market/Storefront";
 import ListingDetail from "./Pages/Market/ListingDetail";
 import Cart from "./Pages/Market/Cart";
+import Checkout from "./Pages/Market/Checkout";
 import OrderList from "./Pages/Orders/OrderList";
 import OrderTrack from "./Pages/Orders/OrderTrack";
 import FarmerDashboard from "./Pages/Farmer/FarmerDashboard";
@@ -33,6 +34,14 @@ function App() {
           <Route path="/market" element={<Storefront />} />
           <Route path="/market/:id" element={<ListingDetail />} />
           <Route path="/cart" element={<Cart />} />
+          <Route
+            path="/checkout"
+            element={
+              <ProtectedRoute>
+                <Checkout />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/bulk" element={<BulkMarket />} />
           <Route path="/chat" element={<Chatbox />} />
           <Route path="/dashboard" element={<Dashboard />} />

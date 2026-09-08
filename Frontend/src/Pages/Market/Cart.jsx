@@ -324,12 +324,12 @@ export default function Cart() {
               </div>
 
               <button
-                className="w-full mt-3 py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-50 text-white font-bold text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2 min-h-[50px]"
-                onClick={handlePlaceOrder}
-                disabled={loadingOrder}
+                className="w-full mt-3 py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-bold text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2 min-h-[50px]"
+                onClick={() => navigate("/checkout")}
               >
                 <CreditCard size={18} />
-                <span>{loadingOrder ? "Securing Farm Batch..." : `Pay ₹${totalAmountRs}`}</span>
+                <span>Proceed to Secure Checkout</span>
+                <ArrowRight size={18} />
               </button>
 
               <div className="flex items-center gap-2 pt-2 text-[11px] text-slate-500">

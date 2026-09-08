@@ -24,9 +24,13 @@ const bulkPoolSchema = new mongoose.Schema(
       enum: ["open", "closed", "listed", "fulfilled"],
       default: "open",
     },
-    resultListing: { type: mongoose.Schema.Types.ObjectId, ref: "Listing", default: null },
+    resultListing: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Listing",
+      default: null,
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("BulkPool", bulkPoolSchema);

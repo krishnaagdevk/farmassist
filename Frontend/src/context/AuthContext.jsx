@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import api from "../lib/api";
 
 const AuthContext = createContext(null);
 
@@ -48,6 +49,26 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("token");
   };
 
+  const updateUser = (updatedUserData) => {
+    const merged = { ...user, ...updatedUserData };
+    setUser(merged);
+    localStorage.setItem("user", JSON.stringify(merged));
+  };
+
+  const refreshProfile = async () => {
+    if (!token) return null;
+    try {
+      const res = await api.get("/api/auth/me");
+      if (res.data?.user) {
+        updateUser(res.data.user);
+        return res.data.user;
+      }
+    } catch (e) {
+      console.warn("Failed to refresh profile:", e);
+    }
+    return null;
+  };
+
   const updateLocation = (loc) => {
     setUserLocation(loc);
     localStorage.setItem("userLocation", JSON.stringify(loc));
@@ -66,6 +87,8 @@ export function AuthProvider({ children }) {
         loading,
         userLocation,
         updateLocation,
+        updateUser,
+        refreshProfile,
         login,
         logout,
         hasRole,

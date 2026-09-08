@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import api from "../../lib/api";
 import { useAuth } from "../../context/AuthContext";
+import ProfileModal from "../../components/ProfileModal/ProfileModal";
 import {
   Users,
   Package,
@@ -18,11 +19,14 @@ import {
   CreditCard,
   QrCode,
   X,
+  User,
+  Settings,
 } from "lucide-react";
 
 export default function FPODashboard() {
   const { user } = useAuth();
   const [showFpoCert, setShowFpoCert] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [activeTab, setActiveTab] = useState("overview"); // overview | bulk-upload | pools | members
   const [stats, setStats] = useState(null);
   const [pools, setPools] = useState([]);
@@ -189,15 +193,31 @@ export default function FPODashboard() {
               </div>
             </div>
 
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-purple-500 hover:bg-purple-600 text-white font-bold text-xs shadow-md transition-all flex-shrink-0"
-              onClick={() => setShowFpoCert(true)}
-            >
-              <QrCode size={15} />
-              <span>View FPO Certificate</span>
-            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-purple-900/80 hover:bg-purple-800 text-purple-200 border border-purple-400/30 font-semibold text-xs transition-all flex-shrink-0"
+                onClick={() => setShowProfileModal(true)}
+              >
+                <User size={15} />
+                <span>FPO Profile & Security</span>
+              </button>
+
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-purple-500 hover:bg-purple-600 text-white font-bold text-xs shadow-md transition-all flex-shrink-0"
+                onClick={() => setShowProfileModal(true)}
+              >
+                <QrCode size={15} />
+                <span>Smart Pass & ID</span>
+              </button>
+            </div>
           </div>
+
+          {/* Global Profile & Credentials Modal */}
+          {showProfileModal && (
+            <ProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
+          )}
 
           {/* FPO Certificate Modal */}
           {showFpoCert && (

@@ -6,7 +6,7 @@ const router = express.Router();
 
 const geoLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 60,
+  max: 120,
   message: { error: "too_many_location_requests_try_later" },
   standardHeaders: true,
   legacyHeaders: false,
@@ -24,8 +24,8 @@ function extractGoogleAddressComponents(components = []) {
   if (!Array.isArray(components)) return { city: "", district: "", state: "", pincode: "" };
 
   for (const c of components) {
-    if (c.types && c.types.includes("locality")) {
-      city = c.long_name;
+    if (c.types && (c.types.includes("locality") || c.types.includes("sublocality_level_1"))) {
+      if (!city) city = c.long_name;
     } else if (c.types && c.types.includes("administrative_area_level_2")) {
       district = c.long_name;
     } else if (c.types && c.types.includes("administrative_area_level_1")) {
@@ -37,7 +37,7 @@ function extractGoogleAddressComponents(components = []) {
 
   return {
     city: city || district,
-    district,
+    district: district || city,
     state,
     pincode,
   };
@@ -45,7 +45,7 @@ function extractGoogleAddressComponents(components = []) {
 
 /**
  * GET /api/location/autocomplete
- * High-performance Indian places autocomplete returning predictions without N+1 Google Places billing drains
+ * Real-time Google Places Autocomplete for Indian cities, Mandis, APMCs, and hubs
  */
 router.get("/autocomplete", geoLimiter, async (req, res) => {
   const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
@@ -62,22 +62,25 @@ router.get("/autocomplete", geoLimiter, async (req, res) => {
           language: "en",
           key: googleKey,
         },
-        timeout: 4000,
+        timeout: 5000,
       });
 
       if (gRes.data.status === "OK" && Array.isArray(gRes.data.predictions)) {
         return res.json({
-          results: gRes.data.predictions.slice(0, 5).map((p) => ({
+          results: gRes.data.predictions.slice(0, 6).map((p) => ({
             formatted: p.description,
             name: p.structured_formatting?.main_text || p.description,
+            secondary: p.structured_formatting?.secondary_text || "",
             placeId: p.place_id,
           })),
           source: "google_places",
         });
+      } else if (gRes.data.status === "ZERO_RESULTS") {
+        return res.json({ results: [], source: "google_places" });
       }
     }
 
-    // Fallback: OpenStreetMap Nominatim
+    // Fallback: OpenStreetMap Nominatim if Google API unavailable
     const osmRes = await axios.get("https://nominatim.openstreetmap.org/search", {
       params: {
         q,
@@ -86,12 +89,13 @@ router.get("/autocomplete", geoLimiter, async (req, res) => {
         limit: 5,
       },
       headers: { "User-Agent": "AgriDirectApp/1.0" },
-      timeout: 4000,
+      timeout: 5000,
     });
 
     const results = (osmRes.data || []).map((r) => ({
       formatted: r.display_name,
       name: r.name,
+      secondary: r.display_name,
       lat: parseFloat(r.lat),
       lon: parseFloat(r.lon),
       lng: parseFloat(r.lon),
@@ -107,7 +111,7 @@ router.get("/autocomplete", geoLimiter, async (req, res) => {
 
 /**
  * GET /api/location/place-details
- * Fetch geometry & detailed address metadata on-demand for a chosen Place ID
+ * Fetch geometry & detailed address metadata in real time via Google Places Details API
  */
 router.get("/place-details", geoLimiter, async (req, res) => {
   const placeId = typeof req.query.placeId === "string" ? req.query.placeId.trim() : "";
@@ -123,7 +127,7 @@ router.get("/place-details", geoLimiter, async (req, res) => {
         fields: "name,formatted_address,geometry,address_components",
         key: googleKey,
       },
-      timeout: 4000,
+      timeout: 5000,
     });
 
     if (dRes.data.status !== "OK") {
@@ -135,7 +139,7 @@ router.get("/place-details", geoLimiter, async (req, res) => {
     const meta = extractGoogleAddressComponents(det?.address_components);
 
     return res.json({
-      name: det?.name,
+      name: det?.name || det?.formatted_address,
       formatted: det?.formatted_address,
       lat: geo?.lat,
       lon: geo?.lng,
@@ -172,7 +176,7 @@ async function reverseGeocodeHandler(req, res) {
           latlng: `${lat},${lon}`,
           key: googleKey,
         },
-        timeout: 4000,
+        timeout: 5000,
       });
 
       if (gRes.data.status === "OK" && gRes.data.results?.[0]) {
@@ -195,13 +199,14 @@ async function reverseGeocodeHandler(req, res) {
     const osmRes = await axios.get("https://nominatim.openstreetmap.org/reverse", {
       params: { lat, lon, format: "json" },
       headers: { "User-Agent": "AgriDirectApp/1.0" },
-      timeout: 4000,
+      timeout: 5000,
     });
 
     return res.json({
       address: osmRes.data.display_name,
       formatted: osmRes.data.display_name,
       city: osmRes.data.address?.city || osmRes.data.address?.town || osmRes.data.address?.county,
+      district: osmRes.data.address?.county || osmRes.data.address?.city,
       state: osmRes.data.address?.state,
       pincode: osmRes.data.address?.postcode,
       source: "osm_nominatim",

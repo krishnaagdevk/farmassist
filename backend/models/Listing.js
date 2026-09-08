@@ -2,9 +2,19 @@ const mongoose = require("mongoose");
 
 const listingSchema = new mongoose.Schema(
   {
-    farmer: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    farmer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
     fpo: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
-    crop: { type: mongoose.Schema.Types.ObjectId, ref: "Crop", required: true, index: true },
+    crop: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Crop",
+      required: true,
+      index: true,
+    },
     variety: { type: String, default: "Standard" },
     grade: { type: String, enum: ["A", "B", "C"], default: "A" },
     organic: { type: Boolean, default: false },
@@ -30,7 +40,7 @@ const listingSchema = new mongoose.Schema(
       index: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 listingSchema.index({ pickup: "2dsphere" });

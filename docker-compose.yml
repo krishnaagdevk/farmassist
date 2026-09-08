@@ -1,0 +1,67 @@
+version: "3.8"
+
+services:
+  mongo:
+    image: mongo:6
+    container_name: agridirect-mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - agridirect-net
+
+  ml-service:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+    container_name: agridirect-ml
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - agridirect-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: agridirect-backend
+    restart: always
+    depends_on:
+      - mongo
+      - ml-service
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - MONGO_URI=mongodb://mongo:27017/agridirect
+      - JWT_SECRET=sih-agridirect-production-secret-2026
+      - MOCK_PAYMENTS=true
+      - ML_SERVICE_URL=http://ml-service:8000
+      - CORS_ORIGIN=http://localhost:5173,http://localhost:80,http://localhost
+    networks:
+      - agridirect-net
+
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    container_name: agridirect-frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+    networks:
+      - agridirect-net
+
+volumes:
+  mongo_data:
+
+networks:
+  agridirect-net:
+    driver: bridge

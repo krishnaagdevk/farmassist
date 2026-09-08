@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import api from "../../lib/api";
 import { useAuth } from "../../context/AuthContext";
+import ProfileModal from "../../components/ProfileModal/ProfileModal";
 import {
   Truck,
   CheckCircle2,
@@ -13,10 +14,12 @@ import {
   ShieldCheck,
   CreditCard,
   QrCode,
+  User,
 } from "lucide-react";
 
 export default function DriverRun() {
   const { user } = useAuth();
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [activeShipment, setActiveShipment] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -111,20 +114,37 @@ export default function DriverRun() {
           )}
         </div>
 
-        {/* Logistics Pilot Digital ID Badge */}
-        <div className="max-w-3xl mx-auto mt-4 p-3 rounded-xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-between gap-3 text-xs">
+        {/* Logistics Pilot Digital ID Badge & Profile Trigger */}
+        <div className="max-w-3xl mx-auto mt-4 p-3 rounded-xl bg-slate-800/80 border border-slate-700/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2.5">
             <span className="font-mono font-bold px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/40">
               {user?.digitalId || "DRV-2026-1001"}
             </span>
             <span className="text-slate-200 font-semibold">{user?.name || "Vikas Driver"} &middot; Pilot</span>
           </div>
-          <span className="text-emerald-400 font-semibold flex items-center gap-1">
-            <ShieldCheck size={13} />
-            Active Fleet Carrier
-          </span>
+
+          <div className="flex items-center gap-2">
+            <span className="text-emerald-400 font-semibold flex items-center gap-1">
+              <ShieldCheck size={13} />
+              Active Fleet Carrier
+            </span>
+            {user && (
+              <button
+                type="button"
+                onClick={() => setShowProfileModal(true)}
+                className="px-2.5 py-1 rounded-lg bg-blue-600/30 hover:bg-blue-600/50 text-blue-200 border border-blue-400/40 font-semibold text-[11px] transition"
+              >
+                Pilot Profile
+              </button>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Global Profile & Credentials Modal */}
+      {showProfileModal && (
+        <ProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
+      )}
 
       {/* Ordered Stop-by-Stop Run Sheet */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 -mt-4 space-y-4">

@@ -5,7 +5,7 @@ import time
 
 from matrix import get_road_matrix
 from routing import solve_cvrp
-from forecast import train_and_forecast_demand
+from forecast import train_and_forecast_demand, train_and_forecast_price
 
 app = FastAPI(title="AgriDirect AI & Routing Microservice", version="1.0.0")
 
@@ -40,6 +40,12 @@ class OptimizeRequest(BaseModel):
 class ForecastRequest(BaseModel):
     crop: str = "tomato"
     region: str = "Ghaziabad"
+    horizonDays: int = 14
+    history: Optional[List[Dict[str, Any]]] = None
+
+class PriceForecastRequest(BaseModel):
+    crop: str = "tomato"
+    market: str = "Ghaziabad"
     horizonDays: int = 14
     history: Optional[List[Dict[str, Any]]] = None
 
@@ -87,6 +93,15 @@ def forecast_demand_endpoint(req: ForecastRequest):
     return train_and_forecast_demand(
         crop=req.crop,
         region=req.region,
+        horizon_days=req.horizonDays,
+        history=req.history,
+    )
+
+@app.post("/forecast/price")
+def forecast_price_endpoint(req: PriceForecastRequest):
+    return train_and_forecast_price(
+        crop=req.crop,
+        market=req.market,
         horizon_days=req.horizonDays,
         history=req.history,
     )

@@ -17,12 +17,14 @@ import {
   Building2,
   Users,
 } from "lucide-react";
+import ProfileModal from "../ProfileModal/ProfileModal";
 import "./Navbar.css";
 
 export default function Navbar() {
   const { user, logout, userLocation } = useAuth();
   const { itemCount } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -111,7 +113,7 @@ export default function Navbar() {
               <button
                 className="user-profile-btn"
                 title={`${user.name || "User"} (${user.role})`}
-                onClick={() => navigate("/orders")}
+                onClick={() => setShowProfileModal(true)}
               >
                 <div className="user-avatar">
                   {user.name ? user.name.charAt(0).toUpperCase() : "U"}
@@ -150,10 +152,16 @@ export default function Navbar() {
       {mobileMenuOpen && (
         <div className="mobile-drawer">
           {user && (
-            <div className="mobile-user-card">
+            <div
+              className="mobile-user-card cursor-pointer"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                setShowProfileModal(true);
+              }}
+            >
               <strong>{user.name}</strong>
               <span className="role-tag">
-                {user.role ? user.role.toUpperCase() : "BUYER"}
+                {user.role ? user.role.toUpperCase() : "BUYER"} · Edit Profile
               </span>
             </div>
           )}
@@ -263,6 +271,12 @@ export default function Navbar() {
           )}
         </div>
       )}
+
+      {/* Global Profile Management Modal */}
+      <ProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+      />
     </header>
   );
 }

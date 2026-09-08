@@ -8,10 +8,11 @@ const chainAssumptionSchema = new mongoose.Schema(
     logisticsLossPct: { type: Number, default: 15 },
     source: {
       type: String,
-      default: "Modelled from published supply chain & APMC mandi studies; configurable",
+      default:
+        "Modelled from published supply chain & APMC mandi studies; configurable",
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("ChainAssumption", chainAssumptionSchema);

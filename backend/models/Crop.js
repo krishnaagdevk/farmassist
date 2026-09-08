@@ -2,7 +2,13 @@ const mongoose = require("mongoose");
 
 const cropSchema = new mongoose.Schema(
   {
-    slug: { type: String, unique: true, required: true, lowercase: true, trim: true },
+    slug: {
+      type: String,
+      unique: true,
+      required: true,
+      lowercase: true,
+      trim: true,
+    },
     name: { type: String, required: true },
     nameHi: { type: String, default: "" },
     category: {
@@ -15,7 +21,7 @@ const cropSchema = new mongoose.Schema(
     imageUrl: { type: String, default: "" },
     msppaisePerKg: { type: Number, default: null }, // MSP in paise per kg
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Crop", cropSchema);

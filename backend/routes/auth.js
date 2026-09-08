@@ -315,6 +315,63 @@ router.get("/me", verifyToken, async (req, res) => {
 });
 
 /**
+ * PATCH /api/auth/profile
+ * Update authenticated user profile info (name, phone, orgName, address, password)
+ */
+router.patch("/profile", verifyToken, async (req, res) => {
+  try {
+    const { name, phone, orgName, address, newPassword, currentPassword } = req.body;
+    const user = await User.findById(req.user.sub);
+    if (!user) return res.status(404).json({ error: "user_not_found" });
+
+    if (name && typeof name === "string") user.name = name.trim();
+    if (phone !== undefined) user.phone = String(phone).trim();
+    if (orgName !== undefined) user.orgName = String(orgName).trim();
+
+    if (address && typeof address === "object") {
+      user.address = {
+        line1: address.line1 || user.address?.line1 || "",
+        village: address.village || user.address?.village || "",
+        district: address.district || user.address?.district || "",
+        state: address.state || user.address?.state || "",
+        pincode: address.pincode || user.address?.pincode || "",
+      };
+    }
+
+    if (newPassword && typeof newPassword === "string" && newPassword.length >= 6) {
+      if (currentPassword) {
+        const isMatch = await user.comparePassword(currentPassword);
+        if (!isMatch) {
+          return res.status(400).json({ error: "current_password_incorrect" });
+        }
+      }
+      user.password = newPassword; // Will trigger bcrypt pre-save hook
+    }
+
+    await user.save();
+
+    const sanitizedUser = {
+      _id: user._id,
+      id: user._id,
+      digitalId: user.digitalId,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      buyerType: user.buyerType,
+      orgName: user.orgName,
+      address: user.address,
+      kycStatus: user.kycStatus,
+    };
+
+    return res.json({ ok: true, user: sanitizedUser, message: "profile_updated_successfully" });
+  } catch (err) {
+    console.error("Profile update error:", err);
+    return res.status(500).json({ error: "failed_to_update_profile" });
+  }
+});
+
+/**
  * POST /api/auth/kyc/submit
  * Farmers / FPOs submit KYC details & documents
  */
